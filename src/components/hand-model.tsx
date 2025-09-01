@@ -46,42 +46,49 @@ export function HandModel({ hand, sensorData, isRecording }: HandModelProps) {
     scene.add(dirLight);
 
     // Create a more realistic hand
-    const handMaterial = new THREE.MeshStandardMaterial({ color: 0x87CEEB, roughness: 0.4, metalness: 0.2 });
+    const handMaterial = new THREE.MeshStandardMaterial({ color: 0xffdbac, roughness: 0.5, metalness: 0.1 });
     
     const handGroup = new THREE.Group();
     handGroupRef.current = handGroup;
 
     // Forearm
-    const forearm = new THREE.Mesh(new THREE.BoxGeometry(2, 6, 1), handMaterial);
-    forearm.position.y = -6;
+    const forearmGeo = new THREE.CylinderGeometry(1, 1.2, 8, 16);
+    const forearm = new THREE.Mesh(forearmGeo, handMaterial);
+    forearm.position.y = -7;
     handGroup.add(forearm);
 
     // Wrist
     const wristGroup = new THREE.Group();
     wristGroup.position.y = -3;
-    const wrist = new THREE.Mesh(new THREE.SphereGeometry(0.8, 16, 16), handMaterial);
+    const wrist = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 16), handMaterial);
     wristGroup.add(wrist);
     handGroup.add(wristGroup);
     wristRef.current = wristGroup;
 
     // Palm
-    const palm = new THREE.Mesh(new THREE.BoxGeometry(3.5, 4, 0.5), handMaterial);
-    palm.position.y = -0.5;
+    const palmShape = new THREE.Shape();
+    palmShape.moveTo(-1.8, 1.5);
+    palmShape.lineTo(1.8, 1.5);
+    palmShape.lineTo(2, -1.5);
+    palmShape.lineTo(-2, -2.5);
+    palmShape.lineTo(-1.8, 1.5);
+    const extrudeSettings = { depth: 0.8, bevelEnabled: true, bevelSegments: 2, steps: 2, bevelSize: 0.1, bevelThickness: 0.1 };
+    const palm = new THREE.Mesh(new THREE.ExtrudeGeometry(palmShape, extrudeSettings), handMaterial);
+    palm.position.y = -0.8;
+    palm.position.z = -0.4
     handGroup.add(palm);
 
     fingerJointsRef.current = [];
-    // isThumb, segments, baseX, baseY, baseRotZ, knuckleSize
     const fingerData = [
-      { name: "Thumb", segments: [1, 1], baseX: -2, baseY: -2, baseRotZ: Math.PI / 6, knuckleSize: 0.4 },
-      { name: "Index", segments: [1.2, 1, 0.8], baseX: -1.2, baseY: 1.5, baseRotZ: 0, knuckleSize: 0.35 },
-      { name: "Middle", segments: [1.4, 1.1, 0.9], baseX: -0.4, baseY: 1.5, baseRotZ: 0, knuckleSize: 0.35 },
-      { name: "Ring", segments: [1.3, 1, 0.8], baseX: 0.4, baseY: 1.5, baseRotZ: 0, knuckleSize: 0.35 },
-      { name: "Pinky", segments: [1, 0.8, 0.7], baseX: 1.2, baseY: 1.5, baseRotZ: 0, knuckleSize: 0.3 },
+        { name: "Thumb", segments: [1, 1.2], baseX: -2.2, baseY: -1.2, baseRotZ: Math.PI / 4, knuckleSize: 0.4 },
+        { name: "Index", segments: [1.3, 1, 0.7], baseX: -1.4, baseY: 1.5, baseRotZ: 0.05, knuckleSize: 0.3 },
+        { name: "Middle", segments: [1.5, 1.2, 0.8], baseX: -0.5, baseY: 1.5, baseRotZ: 0, knuckleSize: 0.32 },
+        { name: "Ring", segments: [1.4, 1.1, 0.7], baseX: 0.4, baseY: 1.5, baseRotZ: -0.05, knuckleSize: 0.3 },
+        { name: "Pinky", segments: [1.1, 0.9, 0.6], baseX: 1.2, baseY: 1.4, baseRotZ: -0.1, knuckleSize: 0.25 },
     ];
 
     fingerData.forEach(data => {
       let parent: THREE.Group = handGroup;
-      let cumulativeY = 0;
       
       const fingerRoot = new THREE.Group();
       fingerRoot.position.set(data.baseX, data.baseY, 0);
@@ -90,24 +97,25 @@ export function HandModel({ hand, sensorData, isRecording }: HandModelProps) {
       fingerJointsRef.current.push(fingerRoot);
       
       let currentSegmentGroup = fingerRoot;
+      let lastSegmentLength = 0;
 
       data.segments.forEach((segmentLength, i) => {
         const segmentGroup = new THREE.Group();
-        const yPos = (i === 0 ? segmentLength / 2 : cumulativeY + segmentLength / 2);
-        segmentGroup.position.y = (i === 0) ? segmentLength / 2 : segmentLength / 2;
+        segmentGroup.position.y = (i === 0) ? 0 : lastSegmentLength;
 
-        const segmentGeo = new THREE.BoxGeometry(data.knuckleSize * 1.8, segmentLength, data.knuckleSize * 1.5);
-        const segmentMesh = new THREE.Mesh(segmentGeo, handMaterial);
+        const phalanxGeo = new THREE.CylinderGeometry(data.knuckleSize * 0.8, data.knuckleSize * 0.7, segmentLength, 12);
+        const phalanx = new THREE.Mesh(phalanxGeo, handMaterial);
+        phalanx.position.y = segmentLength / 2;
         
-        const knuckle = new THREE.Mesh(new THREE.SphereGeometry(data.knuckleSize, 16, 16), handMaterial);
-        knuckle.position.y = -segmentLength / 2;
+        const knuckleGeo = new THREE.SphereGeometry(data.knuckleSize, 12, 12);
+        const knuckle = new THREE.Mesh(knuckleGeo, handMaterial);
 
-        segmentGroup.add(segmentMesh);
-        if(i > 0) segmentGroup.add(knuckle);
+        segmentGroup.add(phalanx);
+        segmentGroup.add(knuckle);
 
         currentSegmentGroup.add(segmentGroup);
         currentSegmentGroup = segmentGroup;
-        cumulativeY += segmentLength;
+        lastSegmentLength = segmentLength;
       });
     });
 
@@ -149,65 +157,62 @@ export function HandModel({ hand, sensorData, isRecording }: HandModelProps) {
     const joints = fingerJointsRef.current;
     if (joints.length !== 5) return;
     
-    if (!isRecording) {
-      joints.forEach(j => { 
-        j.rotation.x = 0;
-        j.children.forEach(child => {
-            if(child instanceof THREE.Group) {
-                 child.rotation.x = 0;
-                 child.children.forEach(grandChild => {
-                     if(grandChild instanceof THREE.Group) {
-                         grandChild.rotation.x = 0;
-                     }
-                 });
+    const resetRotations = (group: THREE.Group) => {
+        group.rotation.x = 0;
+        group.rotation.y = 0;
+        group.rotation.z = 0;
+        group.children.forEach(child => {
+            if (child instanceof THREE.Group) {
+                resetRotations(child);
             }
         });
-      });
-      if (wristRef.current) wristRef.current.rotation.z = 0;
+    };
+
+    if (!isRecording) {
+      joints.forEach(resetRotations);
+      if (wristRef.current) resetRotations(wristRef.current);
+      if (handGroupRef.current) handGroupRef.current.rotation.set(0,0,0);
       return;
     }
     
     if (sensorData.length === 6) {
       // sensorData maps to: thumb, index, middle, ring, pinky, wrist
-      const setRotation = (joint: THREE.Group, value: number, maxAngle: number, isThumb = false) => {
+      const setRotation = (joint: THREE.Group, value: number, maxAngle: number, fingerIndex: number) => {
         if (!joint) return;
-        const mainRotation = value * maxAngle * 0.5;
-        const midRotation = value * maxAngle * 0.6;
-        const tipRotation = value * maxAngle * 0.7;
+        
+        const isThumb = fingerIndex === 0;
 
         if (isThumb) {
-            joint.rotation.z = (value - 0.5) * Math.PI / 4;
-            joint.rotation.y = value * Math.PI / 4;
+            const thumbSegment1 = joint.children[0] as THREE.Group;
+            const thumbSegment2 = thumbSegment1?.children[2] as THREE.Group;
+            joint.rotation.z = Math.PI / 4 + (value - 0.5) * Math.PI / 4;
+            joint.rotation.y = value * -Math.PI / 6;
+            if (thumbSegment1) thumbSegment1.rotation.x = value * maxAngle * 0.8;
+            if (thumbSegment2) thumbSegment2.rotation.x = value * maxAngle * 0.9;
         } else {
-            joint.rotation.x = mainRotation;
-        }
-
-        const firstSegment = joint.children[0] as THREE.Group;
-        if(firstSegment && firstSegment.children[1]) {
-            const secondSegment = firstSegment.children[1] as THREE.Group;
-            if (secondSegment) {
-                secondSegment.rotation.x = midRotation;
-                if(secondSegment.children[1]) {
-                  const thirdSegment = secondSegment.children[1] as THREE.Group;
-                  if (thirdSegment) {
-                    thirdSegment.rotation.x = tipRotation;
-                  }
-                }
-            }
+            const fingerSegment1 = joint.children[0] as THREE.Group;
+            const fingerSegment2 = fingerSegment1?.children[2] as THREE.Group;
+            const fingerSegment3 = fingerSegment2?.children[2] as THREE.Group;
+            if (fingerSegment1) fingerSegment1.rotation.x = value * maxAngle * 0.6;
+            if (fingerSegment2) fingerSegment2.rotation.x = value * maxAngle * 0.8;
+            if (fingerSegment3) fingerSegment3.rotation.x = value * maxAngle * 0.9;
         }
       };
       
-      setRotation(joints[0], sensorData[0], Math.PI / 1.5, true);
-      setRotation(joints[1], sensorData[1], Math.PI / 2);
-      setRotation(joints[2], sensorData[2], Math.PI / 2);
-      setRotation(joints[3], sensorData[3], Math.PI / 2);
-      setRotation(joints[4], sensorData[4], Math.PI / 2);
+      setRotation(joints[0], sensorData[0], Math.PI / 2, 0); // Thumb
+      setRotation(joints[1], sensorData[1], Math.PI / 2, 1); // Index
+      setRotation(joints[2], sensorData[2], Math.PI / 2, 2); // Middle
+      setRotation(joints[3], sensorData[3], Math.PI / 2, 3); // Ring
+      setRotation(joints[4], sensorData[4], Math.PI / 2, 4); // Pinky
 
       if (wristRef.current) {
-        wristRef.current.rotation.z = (sensorData[5] - 0.5) * Math.PI / 4;
+        wristRef.current.rotation.z = (sensorData[5] - 0.5) * Math.PI / 6; // Wrist flex/extend
+        wristRef.current.rotation.x = (sensorData[5] - 0.5) * Math.PI / 8; // Wrist ulnar/radial deviation
       }
     }
   }, [sensorData, isRecording]);
 
   return <div ref={mountRef} className="w-full h-[250px] cursor-grab active:cursor-grabbing rounded-b-lg" />;
 }
+
+    
