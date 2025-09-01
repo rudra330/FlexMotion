@@ -2,6 +2,7 @@
 
 import { Play, Square, Download, HandMetal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 type HeaderProps = {
   isRecording: boolean;
@@ -29,6 +30,7 @@ export function Header({ isRecording, onToggleRecording, onDownloadCsv }: Header
             <span className="hidden sm:inline">Download CSV</span>
             <span className="sm:hidden">CSV</span>
           </Button>
+          <ThemeToggle />
         </div>
       </div>
     </header>

@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    --background: 0 0% 94%;
+    --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
@@ -55,6 +55,48 @@
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+  }
+  .theme-sunset {
+    --background: 15 20% 95%;
+    --foreground: 20 14.3% 4.1%;
+    --card: 15 20% 95%;
+    --card-foreground: 20 14.3% 4.1%;
+    --popover: 15 20% 95%;
+    --popover-foreground: 20 14.3% 4.1%;
+    --primary: 35 91% 55%;
+    --primary-foreground: 20 14.3% 4.1%;
+    --secondary: 20 14.3% 95.9%;
+    --secondary-foreground: 20 14.3% 4.1%;
+    --muted: 20 14.3% 95.9%;
+    --muted-foreground: 25 5.3% 44.7%;
+    --accent: 10 89% 65%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 20 5.9% 90%;
+    --input: 20 5.9% 90%;
+    --ring: 35 91% 55%;
+  }
+  .theme-forest {
+    --background: 120 25% 97%;
+    --foreground: 120 10% 3.9%;
+    --card: 120 25% 97%;
+    --card-foreground: 120 10% 3.9%;
+    --popover: 120 25% 97%;
+    --popover-foreground: 120 10% 3.9%;
+    --primary: 140 71% 40%;
+    --primary-foreground: 140 10% 98%;
+    --secondary: 130 15% 95%;
+    --secondary-foreground: 120 10% 3.9%;
+    --muted: 130 15% 95%;
+    --muted-foreground: 120 7% 45%;
+    --accent: 150 60% 50%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 120 10% 89%;
+    --input: 120 10% 89%;
+    --ring: 140 71% 40%;
   }
 }
 
