@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { SessionAnalysis } from "@/components/session-analysis";
 import type { RecordedDataPoint, Session } from "@/lib/types";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const SENSOR_COUNT = 6;
 export const SENSOR_NAMES = ["Thumb", "Index", "Middle", "Ring", "Pinky", "Wrist"];
