@@ -36,20 +36,20 @@ export default function DashboardLayout({
             <SidebarMenuItem>
               <Link href="/dashboard" passHref>
                 <SidebarMenuButton asChild isActive={pathname === '/dashboard'} tooltip="Dashboard">
-                  <>
+                  <span>
                     <LayoutDashboard />
                     <span className="group-data-[collapsible=icon]:hidden">Dashboard</span>
-                  </>
+                  </span>
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>
              <SidebarMenuItem>
                 <Link href="/dashboard/motor" passHref>
                     <SidebarMenuButton asChild isActive={pathname === '/dashboard/motor'} tooltip="Motor">
-                        <>
+                        <span>
                             <Cog />
                             <span className="group-data-[collapsible=icon]:hidden">Motor</span>
-                        </>
+                        </span>
                     </SidebarMenuButton>
                 </Link>
             </SidebarMenuItem>
