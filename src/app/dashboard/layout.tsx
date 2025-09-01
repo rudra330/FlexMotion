@@ -33,20 +33,20 @@ export default function DashboardLayout({
         <SidebarContent>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton asChild>
-                <Link href="/dashboard">
+              <Link href="/dashboard">
+                <SidebarMenuButton>
                   <LayoutDashboard />
                   Dashboard
-                </Link>
-              </SidebarMenuButton>
+                </SidebarMenuButton>
+              </Link>
             </SidebarMenuItem>
              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <Link href="/dashboard/motor">
+                <Link href="/dashboard/motor">
+                  <SidebarMenuButton>
                       <Cog />
                       Motor
-                  </Link>
-                </SidebarMenuButton>
+                  </SidebarMenuButton>
+                </Link>
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarContent>
