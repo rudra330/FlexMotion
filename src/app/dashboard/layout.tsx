@@ -33,16 +33,16 @@ export default function DashboardLayout({
         <SidebarContent>
           <SidebarMenu>
             <SidebarMenuItem>
-              <Link href="/dashboard" passHref legacyBehavior>
-                <SidebarMenuButton as="a">
+              <Link href="/dashboard">
+                <SidebarMenuButton>
                   <LayoutDashboard />
                   Dashboard
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>
              <SidebarMenuItem>
-                <Link href="/dashboard/motor" passHref legacyBehavior>
-                    <SidebarMenuButton as="a">
+                <Link href="/dashboard/motor">
+                    <SidebarMenuButton>
                         <Cog />
                         Motor
                     </SidebarMenuButton>
