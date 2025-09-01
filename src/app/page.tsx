@@ -8,7 +8,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { SessionAnalysis } from "@/components/session-analysis";
 import type { RecordedDataPoint, Session } from "@/lib/types";
-import { ThemeToggle } from "@/components/theme-toggle";
 
 const SENSOR_COUNT = 6;
 export const SENSOR_NAMES = ["Thumb", "Index", "Middle", "Ring", "Pinky", "Wrist"];
@@ -33,6 +32,19 @@ export default function Home() {
       console.error("Failed to load sessions from localStorage", error);
     }
   }, []);
+
+  const updateSessions = (newSessions: Session[]) => {
+    setSessions(newSessions);
+    try {
+      localStorage.setItem("flexmotion-sessions", JSON.stringify(newSessions));
+    } catch (error) {
+       toast({
+        title: "Error Saving Session",
+        description: "Could not save session to local storage. It might be full.",
+        variant: "destructive",
+      });
+    }
+  }
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -69,21 +81,11 @@ export default function Home() {
           duration: (currentRecording[currentRecording.length - 1].timestamp - currentRecording[0].timestamp) / 1000,
           data: currentRecording,
         };
-        const updatedSessions = [...sessions, newSession];
-        setSessions(updatedSessions);
-        try {
-          localStorage.setItem("flexmotion-sessions", JSON.stringify(updatedSessions));
-          toast({
-            title: "Session Saved",
-            description: "Your recording has been saved for analysis.",
-          });
-        } catch (error) {
-          toast({
-            title: "Error Saving Session",
-            description: "Could not save session to local storage. It might be full.",
-            variant: "destructive",
-          });
-        }
+        updateSessions([...sessions, newSession]);
+        toast({
+          title: "Session Saved",
+          description: "Your recording has been saved for analysis.",
+        });
       } else {
         toast({
           title: "Recording Stopped",
@@ -134,19 +136,18 @@ export default function Home() {
   };
 
   const handleClearSessions = () => {
-    setSessions([]);
-    try {
-      localStorage.removeItem("flexmotion-sessions");
-      toast({
-        title: "All sessions cleared",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Could not clear sessions from local storage.",
-        variant: "destructive",
-      });
-    }
+    updateSessions([]);
+    toast({
+      title: "All sessions cleared",
+    });
+  }
+
+  const handleDeleteSession = (sessionId: string) => {
+    const updatedSessions = sessions.filter(s => s.id !== sessionId);
+    updateSessions(updatedSessions);
+    toast({
+      title: "Session deleted",
+    });
   }
 
   const chartData = currentRecording.slice(-150);
@@ -192,7 +193,11 @@ export default function Home() {
         </div>
         
         <div className="mt-6">
-          <SessionAnalysis sessions={sessions} onClearSessions={handleClearSessions} />
+          <SessionAnalysis 
+            sessions={sessions} 
+            onClearSessions={handleClearSessions}
+            onDeleteSession={handleDeleteSession}
+          />
         </div>
       </main>
     </div>
