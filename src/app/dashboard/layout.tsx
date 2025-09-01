@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Cog, HandMetal, LayoutDashboard } from "lucide-react";
 import {
   Sidebar,
@@ -32,16 +33,20 @@ export default function DashboardLayout({
         <SidebarContent>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton href="/dashboard">
-                <LayoutDashboard />
-                Dashboard
-              </SidebarMenuButton>
+              <Link href="/dashboard" passHref legacyBehavior>
+                <SidebarMenuButton as="a">
+                  <LayoutDashboard />
+                  Dashboard
+                </SidebarMenuButton>
+              </Link>
             </SidebarMenuItem>
              <SidebarMenuItem>
-              <SidebarMenuButton href="/dashboard/motor">
-                <Cog />
-                Motor
-              </SidebarMenuButton>
+                <Link href="/dashboard/motor" passHref legacyBehavior>
+                    <SidebarMenuButton as="a">
+                        <Cog />
+                        Motor
+                    </SidebarMenuButton>
+                </Link>
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarContent>
