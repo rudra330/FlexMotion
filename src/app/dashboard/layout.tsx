@@ -1,6 +1,6 @@
 "use client";
 
-import { HandMetal, LayoutDashboard } from "lucide-react";
+import { Cog, HandMetal, LayoutDashboard } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -32,9 +32,15 @@ export default function DashboardLayout({
         <SidebarContent>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton href="/dashboard" isActive>
+              <SidebarMenuButton href="/dashboard">
                 <LayoutDashboard />
                 Dashboard
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+             <SidebarMenuItem>
+              <SidebarMenuButton href="/dashboard/motor">
+                <Cog />
+                Motor
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
