@@ -74,6 +74,7 @@ export default function Home() {
 
     if (wasRecording) {
       // Stopping recording
+      setSensorData(Array(SENSOR_COUNT).fill(0)); // Reset sensor data
       if (currentRecording.length > 0) {
         const newSession: Session = {
           id: `session_${Date.now()}`,
