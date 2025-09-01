@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Bar, BarChart, XAxis, YAxis } from "recharts";
 import { format, isSameDay } from "date-fns";
-import { Calendar as CalendarIcon, Trash2, XCircle } from "lucide-react";
+import { Calendar as CalendarIcon, Trash2, XCircle, Download, Play, Square } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -25,7 +25,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { SENSOR_NAMES } from "@/app/page";
+import { SENSOR_NAMES } from "@/app/dashboard/page";
 import type { Session } from "@/lib/types";
 import { Button } from "./ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
@@ -36,6 +36,9 @@ type SessionAnalysisProps = {
   sessions: Session[];
   onClearSessions: () => void;
   onDeleteSession: (sessionId: string) => void;
+  isRecording: boolean;
+  onToggleRecording: () => void;
+  onDownloadCsv: () => void;
 };
 
 const getSessionStats = (session: Session) => {
@@ -65,26 +68,12 @@ export function SessionAnalysis({
   sessions,
   onClearSessions,
   onDeleteSession,
+  isRecording,
+  onToggleRecording,
+  onDownloadCsv,
 }: SessionAnalysisProps) {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
 
-  if (sessions.length === 0) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Session Analysis</CardTitle>
-          <CardDescription>
-            No sessions recorded yet. Start a recording to begin analysis.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center text-muted-foreground p-8">
-            Your recorded sessions will appear here.
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
 
   const overallChartData = sessions.map((session) => {
     const stats = getSessionStats(session);
@@ -110,16 +99,25 @@ export function SessionAnalysis({
           <div>
             <CardTitle>Session Analysis</CardTitle>
             <CardDescription>
-              Review progress across all recorded sessions.
+              Review progress and manage recording sessions.
             </CardDescription>
           </div>
-          <div className="flex items-center gap-2">
-            <Popover>
+           <div className="flex flex-wrap items-center gap-2">
+            <Button onClick={onToggleRecording} variant={isRecording ? 'destructive' : 'default'} className="w-36 sm:w-40">
+                {isRecording ? <Square className="mr-2 h-4 w-4" /> : <Play className="mr-2 h-4 w-4" />}
+                {isRecording ? 'Stop' : 'Start Recording'}
+            </Button>
+            <Button onClick={onDownloadCsv} disabled={isRecording} variant="outline">
+                <Download className="mr-2 h-4 w-4" />
+                <span className="hidden sm:inline">Download CSV</span>
+                <span className="sm:hidden">CSV</span>
+            </Button>
+             <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant={"outline"}
                   className={cn(
-                    "w-[240px] justify-start text-left font-normal",
+                    "w-full sm:w-[240px] justify-start text-left font-normal",
                     !selectedDate && "text-muted-foreground"
                   )}
                 >
@@ -157,6 +155,11 @@ export function SessionAnalysis({
         </div>
       </CardHeader>
       <CardContent className="grid gap-8">
+       {sessions.length === 0 ? (
+           <div className="text-center text-muted-foreground p-8">
+            No sessions recorded yet. Start a recording to begin analysis.
+          </div>
+       ) : (
         <div className="grid gap-6 md:grid-cols-2">
             <div className="flex flex-col gap-4">
                 <h3 className="text-lg font-semibold">Overall Improvement</h3>
@@ -244,6 +247,7 @@ export function SessionAnalysis({
                 </div>
             </div>
         </div>
+        )}
       </CardContent>
       <CardFooter className="text-xs text-muted-foreground">
         Note: Range of Motion is the difference between the max and min values
