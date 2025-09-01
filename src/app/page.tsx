@@ -6,27 +6,38 @@ import { SensorChart } from "@/components/sensor-chart";
 import { HandModel } from "@/components/hand-model";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { SessionAnalysis } from "@/components/session-analysis";
+import type { RecordedDataPoint, Session } from "@/lib/types";
 
 const SENSOR_COUNT = 6;
-const SENSOR_NAMES = ["Thumb", "Index", "Middle", "Ring", "Pinky", "Wrist"];
+export const SENSOR_NAMES = ["Thumb", "Index", "Middle", "Ring", "Pinky", "Wrist"];
 
-type SensorData = number[];
-type RecordedDataPoint = {
-  timestamp: number;
-  [key: string]: number;
-};
 
 export default function Home() {
   const [isRecording, setIsRecording] = useState(false);
-  const [sensorData, setSensorData] = useState<SensorData>(Array(SENSOR_COUNT).fill(0));
-  const [recordedData, setRecordedData] = useState<RecordedDataPoint[]>([]);
+  const [sensorData, setSensorData] = useState<number[]>(Array(SENSOR_COUNT).fill(0));
+  const [currentRecording, setCurrentRecording] = useState<RecordedDataPoint[]>([]);
+  const [sessions, setSessions] = useState<Session[]>([]);
+  
   const { toast } = useToast();
+
+  useEffect(() => {
+    // Load sessions from localStorage on initial render
+    try {
+      const savedSessions = localStorage.getItem("flexmotion-sessions");
+      if (savedSessions) {
+        setSessions(JSON.parse(savedSessions));
+      }
+    } catch (error) {
+      console.error("Failed to load sessions from localStorage", error);
+    }
+  }, []);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isRecording) {
       interval = setInterval(() => {
-        const newData: SensorData = Array.from({ length: SENSOR_COUNT }, () => Math.random());
+        const newData: number[] = Array.from({ length: SENSOR_COUNT }, () => Math.random());
         setSensorData(newData);
         
         const newPoint: RecordedDataPoint = { timestamp: Date.now() };
@@ -34,7 +45,7 @@ export default function Home() {
           newPoint[`sensor${i}`] = val;
         });
         
-        setRecordedData(currentRecordedData => [...currentRecordedData, newPoint]);
+        setCurrentRecording(currentData => [...currentData, newPoint]);
       }, 200);
     }
     return () => {
@@ -45,23 +56,51 @@ export default function Home() {
   }, [isRecording]);
 
   const handleToggleRecording = () => {
-    setIsRecording(!isRecording);
-    if (!isRecording) {
-      setRecordedData([]);
+    const wasRecording = isRecording;
+    setIsRecording(!wasRecording);
+
+    if (wasRecording) {
+      // Stopping recording
+      if (currentRecording.length > 0) {
+        const newSession: Session = {
+          id: `session_${Date.now()}`,
+          date: new Date().toISOString(),
+          duration: (currentRecording[currentRecording.length - 1].timestamp - currentRecording[0].timestamp) / 1000,
+          data: currentRecording,
+        };
+        const updatedSessions = [...sessions, newSession];
+        setSessions(updatedSessions);
+        try {
+          localStorage.setItem("flexmotion-sessions", JSON.stringify(updatedSessions));
+          toast({
+            title: "Session Saved",
+            description: "Your recording has been saved for analysis.",
+          });
+        } catch (error) {
+          toast({
+            title: "Error Saving Session",
+            description: "Could not save session to local storage. It might be full.",
+            variant: "destructive",
+          });
+        }
+      } else {
+        toast({
+          title: "Recording Stopped",
+          description: "No data was recorded in this session.",
+        });
+      }
+    } else {
+      // Starting recording
+      setCurrentRecording([]);
       toast({
         title: "Recording Started",
         description: "Generating and recording dummy sensor data.",
-      });
-    } else {
-      toast({
-        title: "Recording Stopped",
-        description: "You can now download the collected data.",
       });
     }
   };
 
   const handleDownloadCsv = () => {
-    if (recordedData.length === 0) {
+    if (currentRecording.length === 0) {
       toast({
         title: "No data to export",
         description: "Start recording to generate data first.",
@@ -71,7 +110,7 @@ export default function Home() {
     }
 
     const headers = ["timestamp", ...SENSOR_NAMES].join(",");
-    const rows = recordedData.map(d => {
+    const rows = currentRecording.map(d => {
       const sensorValues = SENSOR_NAMES.map((_, i) => (d[`sensor${i}`] ?? 0).toFixed(4));
       return [d.timestamp, ...sensorValues].join(",");
     });
@@ -93,7 +132,23 @@ export default function Home() {
     });
   };
 
-  const chartData = recordedData.slice(-150);
+  const handleClearSessions = () => {
+    setSessions([]);
+    try {
+      localStorage.removeItem("flexmotion-sessions");
+      toast({
+        title: "All sessions cleared",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Could not clear sessions from local storage.",
+        variant: "destructive",
+      });
+    }
+  }
+
+  const chartData = currentRecording.slice(-150);
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -133,6 +188,10 @@ export default function Home() {
               <HandModel hand="right" sensorData={sensorData} isRecording={isRecording} />
             </CardContent>
           </Card>
+        </div>
+        
+        <div className="mt-6">
+          <SessionAnalysis sessions={sessions} onClearSessions={handleClearSessions} />
         </div>
       </main>
     </div>
