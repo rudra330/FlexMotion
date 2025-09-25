@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/toaster"
 import { cn } from '@/lib/utils';
 import { ThemeProvider } from '@/components/theme-provider';
 import { SidebarProvider } from '@/components/ui/sidebar';
+import { FirebaseClientProvider } from '@/firebase/client-provider';
 
 export const metadata: Metadata = {
   title: 'FlexMotion Recorder',
@@ -29,9 +30,11 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <SidebarProvider>
-            {children}
-          </SidebarProvider>
+          <FirebaseClientProvider>
+            <SidebarProvider>
+              {children}
+            </SidebarProvider>
+          </FirebaseClientProvider>
           <Toaster />
         </ThemeProvider>
       </body>

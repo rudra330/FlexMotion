@@ -1,14 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getDatabase, ref, onValue } from "firebase/database";
+import { ref, onValue } from "firebase/database";
 import { SensorChart } from "@/components/sensor-chart";
 import { HandModel } from "@/components/hand-model";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { SessionAnalysis } from "@/components/session-analysis";
 import type { RecordedDataPoint, Session } from "@/lib/types";
-import { initializeFirebase } from "@/firebase";
+import { useDatabase } from "@/firebase";
 
 const SENSOR_COUNT = 6;
 export const SENSOR_NAMES = ["Thumb", "Index", "Middle", "Ring", "Pinky", "Wrist"];
@@ -22,12 +22,11 @@ export default function DashboardPage() {
   const [isClient, setIsClient] = useState(false);
 
   const { toast } = useToast();
+  const database = useDatabase();
 
   useEffect(() => {
-    setIsClient(true);
-    // Initialize Firebase and set up the listener
-    const { firebaseApp } = initializeFirebase();
-    const database = getDatabase(firebaseApp);
+    if (!database) return;
+
     const sensorDataRef = ref(database, 'sensorData');
 
     const unsubscribe = onValue(sensorDataRef, (snapshot) => {
@@ -58,10 +57,10 @@ export default function DashboardPage() {
       // Detach the listener when the component unmounts
       unsubscribe();
     };
-  }, [isRecording]); // Rerun when isRecording changes to add to currentRecording
+  }, [database, isRecording]); // Rerun when isRecording or database changes
 
   useEffect(() => {
-    if(!isClient) return;
+    setIsClient(true);
     // Load sessions from localStorage on initial render
     try {
       const savedSessions = localStorage.getItem("flexmotion-sessions");
@@ -71,7 +70,7 @@ export default function DashboardPage() {
     } catch (error) {
       console.error("Failed to load sessions from localStorage", error);
     }
-  }, [isClient]);
+  }, []);
 
   const updateSessions = (newSessions: Session[]) => {
     setSessions(newSessions);
@@ -169,7 +168,7 @@ export default function DashboardPage() {
     });
   }
 
-  const chartData = currentRecording.slice(-150);
+  const chartData = isRecording ? currentRecording.slice(-150) : [];
 
   return (
     <main className="flex-1 p-4 sm:p-6 lg:p-8">
