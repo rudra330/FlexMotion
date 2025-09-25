@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Line, LineChart, CartesianGrid, XAxis, YAxis, Tooltip } from "recharts";
@@ -27,6 +28,8 @@ export function SensorChart({ data, dataKey }: SensorChartProps) {
           <CartesianGrid vertical={false} strokeDasharray="3 3" />
           <XAxis
             dataKey="timestamp"
+            type="number"
+            domain={['dataMin', 'dataMax']}
             tickFormatter={(value) => new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
             axisLine={false}
             tickLine={false}
@@ -34,7 +37,7 @@ export function SensorChart({ data, dataKey }: SensorChartProps) {
             tick={{ fontSize: 12 }}
           />
           <YAxis 
-            domain={[0, 100]} 
+            domain={[0, 1024]} 
             axisLine={false} 
             tickLine={false} 
             tickMargin={8}

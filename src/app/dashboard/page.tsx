@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -57,14 +58,12 @@ export default function DashboardPage() {
     });
 
     return () => {
-      // Detach the listener when the component unmounts
       unsubscribe();
     };
-  }, [database, isRecording]); // Rerun when isRecording or database changes
+  }, [database, isRecording]); 
 
   useEffect(() => {
     setIsClient(true);
-    // Load sessions from localStorage on initial render
     try {
       const savedSessions = localStorage.getItem("flexmotion-sessions");
       if (savedSessions) {
@@ -90,16 +89,13 @@ export default function DashboardPage() {
 
 
   const handleToggleRecording = () => {
-    const wasRecording = isRecording;
-    setIsRecording(!wasRecording);
-
-    if (wasRecording) {
+    if (isRecording) {
       // Stopping recording
       if (currentRecording.length > 0) {
         const newSession: Session = {
           id: `session_${Date.now()}`,
           date: new Date().toISOString(),
-          duration: (currentRecording[currentRecording.length - 1].timestamp - currentRecording[0].timestamp) / 1000,
+          duration: (Date.now() - currentRecording[0].timestamp) / 1000,
           data: currentRecording,
         };
         updateSessions([...sessions, newSession]);
@@ -113,6 +109,7 @@ export default function DashboardPage() {
           description: "No data was recorded in this session.",
         });
       }
+       setCurrentRecording([]);
     } else {
       // Starting recording
       setCurrentRecording([]);
@@ -121,32 +118,22 @@ export default function DashboardPage() {
         description: "Recording live sensor data.",
       });
     }
+    setIsRecording(!isRecording);
   };
+  
 
-  const handleDownloadCsv = () => {
-    if (sessions.length === 0) {
-      toast({
-        title: "No data to export",
-        description: "Record a session to generate data first.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    // a session must be selected to download
-    const lastSession = sessions[sessions.length - 1];
-    if (!lastSession) {
+  const handleDownloadCsv = (session: Session) => {
+    if (!session) {
        toast({
-        title: "No session selected",
-        description: "Please select a session to download.",
+        title: "No session data",
+        description: "There is no data to export for this session.",
         variant: "destructive",
       });
       return;
     }
-
 
     const headers = ["timestamp", ...SENSOR_NAMES].join(",");
-    const rows = lastSession.data.map(d => {
+    const rows = session.data.map(d => {
       const sensorValues = SENSOR_NAMES.map((_, i) => (d[`sensor${i}`] ?? 0).toFixed(4));
       return [d.timestamp, ...sensorValues].join(",");
     });
@@ -156,7 +143,7 @@ export default function DashboardPage() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", `flexmotion_session_${lastSession.id}.csv`);
+    link.setAttribute("download", `flexmotion_session_${session.id}.csv`);
     link.style.visibility = "hidden";
     document.body.appendChild(link);
     link.click();
@@ -164,7 +151,7 @@ export default function DashboardPage() {
     URL.revokeObjectURL(url);
     toast({
       title: "Download Started",
-      description: `Your ${`flexmotion_session_${lastSession.id}.csv`} file is downloading.`,
+      description: `Your ${`flexmotion_session_${session.id}.csv`} file is downloading.`,
     });
   };
 
@@ -182,8 +169,6 @@ export default function DashboardPage() {
       title: "Session deleted",
     });
   }
-
-  const normalizedSensorData = sensorData.map(val => val / 100);
 
   return (
     <main className="flex-1 p-4 sm:p-6 lg:p-8">
@@ -206,7 +191,7 @@ export default function DashboardPage() {
             <CardTitle>Left Hand 3D Model</CardTitle>
           </CardHeader>
           <CardContent className="p-0 overflow-hidden">
-            <HandModel hand="left" sensorData={normalizedSensorData} isRecording={true} />
+            <HandModel hand="left" sensorData={sensorData} isRecording={isRecording} />
           </CardContent>
         </Card>
         <Card>
@@ -214,7 +199,7 @@ export default function DashboardPage() {
             <CardTitle>Right Hand 3D Model</CardTitle>
           </CardHeader>
           <CardContent className="p-0 overflow-hidden">
-            <HandModel hand="right" sensorData={normalizedSensorData} isRecording={true} />
+            <HandModel hand="right" sensorData={sensorData} isRecording={isRecording} />
           </CardContent>
         </Card>
       </div>

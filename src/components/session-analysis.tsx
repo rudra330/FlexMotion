@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -38,7 +39,7 @@ type SessionAnalysisProps = {
   onDeleteSession: (sessionId: string) => void;
   isRecording: boolean;
   onToggleRecording: () => void;
-  onDownloadCsv: () => void;
+  onDownloadCsv: (session: Session) => void;
 };
 
 const getSessionStats = (session: Session) => {
@@ -106,11 +107,6 @@ export function SessionAnalysis({
             <Button onClick={onToggleRecording} variant={isRecording ? 'destructive' : 'default'} className="w-36 sm:w-40">
                 {isRecording ? <Square className="mr-2 h-4 w-4" /> : <Play className="mr-2 h-4 w-4" />}
                 {isRecording ? 'Stop' : 'Start Recording'}
-            </Button>
-            <Button onClick={onDownloadCsv} disabled={isRecording} variant="outline">
-                <Download className="mr-2 h-4 w-4" />
-                <span className="hidden sm:inline">Download CSV</span>
-                <span className="sm:hidden">CSV</span>
             </Button>
              <Popover>
               <PopoverTrigger asChild>
@@ -185,7 +181,7 @@ export function SessionAnalysis({
                         fontSize={12}
                         />
                         <YAxis
-                        domain={[0, 1]}
+                        domain={[0, 1024]}
                         tickLine={false}
                         axisLine={false}
                         tickMargin={8}
@@ -228,10 +224,16 @@ export function SessionAnalysis({
                                     <TableCell className="text-right">{session.duration.toFixed(1)}</TableCell>
                                     <TableCell className="text-right">{avgRange.toFixed(3)}</TableCell>
                                     <TableCell className="text-right">
+                                      <div className="flex items-center justify-end gap-2">
+                                        <Button variant="ghost" size="icon" onClick={() => onDownloadCsv(session)} disabled={isRecording}>
+                                            <Download className="h-4 w-4" />
+                                            <span className="sr-only">Download CSV</span>
+                                        </Button>
                                         <Button variant="ghost" size="icon" onClick={() => onDeleteSession(session.id)}>
                                             <Trash2 className="h-4 w-4 text-destructive" />
                                             <span className="sr-only">Delete session</span>
                                         </Button>
+                                      </div>
                                     </TableCell>
                                 </TableRow>
                             )
