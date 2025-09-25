@@ -1,0 +1,82 @@
+{
+  "entities": {
+    "SensorData": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "SensorData",
+      "type": "object",
+      "description": "Represents the flex sensor data recorded for a single point in time.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the sensor data record."
+        },
+        "finger1": {
+          "type": "number",
+          "description": "Sensor reading for finger 1."
+        },
+        "finger2": {
+          "type": "number",
+          "description": "Sensor reading for finger 2."
+        },
+        "finger3": {
+          "type": "number",
+          "description": "Sensor reading for finger 3."
+        },
+        "finger4": {
+          "type": "number",
+          "description": "Sensor reading for finger 4."
+        },
+        "finger5": {
+          "type": "number",
+          "description": "Sensor reading for finger 5."
+        },
+        "wrist": {
+          "type": "number",
+          "description": "Sensor reading for the wrist."
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "Timestamp of when the sensor data was recorded.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "finger1",
+        "finger2",
+        "finger3",
+        "finger4",
+        "finger5",
+        "wrist",
+        "timestamp"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/sensor_data/{sensorDataId}",
+        "definition": {
+          "entityName": "SensorData",
+          "schema": {
+            "$ref": "#/backend/entities/SensorData"
+          },
+          "description": "Collection to store sensor data readings. Each document represents a single sensor reading at a specific timestamp.",
+          "params": [
+            {
+              "name": "sensorDataId",
+              "description": "Unique identifier for the sensor data record."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "Given the requirement to record and export sensor data, a simple structure focused on storing the sensor readings is appropriate. Since there's no specific user authentication context beyond the possibility of anonymous users, and the primary function is data recording and export, we'll optimize for data ingestion and retrieval. We'll store the sensor data in a single collection.\n\nThis structure supports the QAPs because listing operations will only involve fetching sensor data, and security rules can be applied to the collection to restrict write access based on authentication status (allowing anonymous writes, or requiring authentication).\n\nAuthorization Independence: Not applicable here, as the data is not user-specific and doesn't require complex access control based on ownership or membership. Data clarity is maintained through explicit naming conventions and the use of the 'timestamp' field."
+  }
+}

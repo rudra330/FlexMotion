@@ -1,0 +1,52 @@
+/**
+ * @fileoverview Firestore Security Rules for the sensor data application.
+ *
+ * Core Philosophy:
+ * This ruleset prioritizes data ingestion and retrieval for sensor data, allowing public read access
+ * but restricting write access to authenticated users only. This ensures that sensor data can be
+ * easily collected and analyzed while preventing unauthorized modifications.
+ *
+ * Data Structure:
+ * Sensor data is stored in the `/sensor_data/{sensorDataId}` collection, with each document representing
+ * a single sensor reading at a specific timestamp.
+ *
+ * Key Security Decisions:
+ * - Public read access is granted for the `/sensor_data` collection to facilitate easy data retrieval.
+ * - Write access to the `/sensor_data` collection is restricted to authenticated users to prevent
+ *   unauthorized data modification.
+ * - No user listing is allowed to prevent information disclosure.
+ * - Data shape is not strictly validated to allow for rapid prototyping and iteration.
+ *
+ * Denormalization for Authorization:
+ *  - This setup does not have any denormalization as the security is very basic.
+ *
+ * Structural Segregation:
+ *  - This setup does not have structural segregation as it is very basic.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Grants public read access to sensor data while restricting write access to authenticated users.
+     * @path /sensor_data/{sensorDataId}
+     * @allow (get, list): Any user can read sensor data.
+     * @allow (create, update, delete): Only authenticated users can create, update, or delete sensor data.
+     * @deny (create, update, delete): Unauthenticated users cannot write sensor data.
+     * @principle Enforces authentication for writes while allowing public reads for sensor data.
+     */
+    match /sensor_data/{sensorDataId} {
+      allow get: if true;
+      allow list: if true;
+
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && resource != null;
+      allow delete: if isSignedIn() && resource != null;
+    }
+
+    // --- Helper functions ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+  }
+}
