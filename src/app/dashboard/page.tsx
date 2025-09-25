@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { getDatabase, ref, onValue } from "firebase/database";
 import { SensorChart } from "@/components/sensor-chart";
 import { HandModel } from "@/components/hand-model";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { SessionAnalysis } from "@/components/session-analysis";
 import type { RecordedDataPoint, Session } from "@/lib/types";
+import { initializeFirebase } from "@/firebase";
 
 const SENSOR_COUNT = 6;
 export const SENSOR_NAMES = ["Thumb", "Index", "Middle", "Ring", "Pinky", "Wrist"];
@@ -17,10 +19,49 @@ export default function DashboardPage() {
   const [sensorData, setSensorData] = useState<number[]>(Array(SENSOR_COUNT).fill(0));
   const [currentRecording, setCurrentRecording] = useState<RecordedDataPoint[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
-  
+  const [isClient, setIsClient] = useState(false);
+
   const { toast } = useToast();
 
   useEffect(() => {
+    setIsClient(true);
+    // Initialize Firebase and set up the listener
+    const { firebaseApp } = initializeFirebase();
+    const database = getDatabase(firebaseApp);
+    const sensorDataRef = ref(database, 'sensorData');
+
+    const unsubscribe = onValue(sensorDataRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        // incoming data is 0-100, we need 0-1
+        const newSensorData = [
+          data.finger1 / 100,
+          data.finger2 / 100,
+          data.finger3 / 100,
+          data.finger4 / 100,
+          data.finger5 / 100,
+          data.wrist / 100,
+        ];
+        setSensorData(newSensorData);
+
+        if (isRecording) {
+            const newPoint: RecordedDataPoint = { timestamp: Date.now() };
+            newSensorData.forEach((val, i) => {
+                newPoint[`sensor${i}`] = val;
+            });
+            setCurrentRecording(currentData => [...currentData, newPoint]);
+        }
+      }
+    });
+
+    return () => {
+      // Detach the listener when the component unmounts
+      unsubscribe();
+    };
+  }, [isRecording]); // Rerun when isRecording changes to add to currentRecording
+
+  useEffect(() => {
+    if(!isClient) return;
     // Load sessions from localStorage on initial render
     try {
       const savedSessions = localStorage.getItem("flexmotion-sessions");
@@ -30,7 +71,7 @@ export default function DashboardPage() {
     } catch (error) {
       console.error("Failed to load sessions from localStorage", error);
     }
-  }, []);
+  }, [isClient]);
 
   const updateSessions = (newSessions: Session[]) => {
     setSessions(newSessions);
@@ -45,27 +86,6 @@ export default function DashboardPage() {
     }
   }
 
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (isRecording) {
-      interval = setInterval(() => {
-        const newData: number[] = Array.from({ length: SENSOR_COUNT }, () => Math.random());
-        setSensorData(newData);
-        
-        const newPoint: RecordedDataPoint = { timestamp: Date.now() };
-        newData.forEach((val, i) => {
-          newPoint[`sensor${i}`] = val;
-        });
-        
-        setCurrentRecording(currentData => [...currentData, newPoint]);
-      }, 200);
-    }
-    return () => {
-      if (interval) {
-        clearInterval(interval);
-      }
-    };
-  }, [isRecording]);
 
   const handleToggleRecording = () => {
     const wasRecording = isRecording;
@@ -73,7 +93,6 @@ export default function DashboardPage() {
 
     if (wasRecording) {
       // Stopping recording
-      setSensorData(Array(SENSOR_COUNT).fill(0)); // Reset sensor data
       if (currentRecording.length > 0) {
         const newSession: Session = {
           id: `session_${Date.now()}`,
@@ -97,7 +116,7 @@ export default function DashboardPage() {
       setCurrentRecording([]);
       toast({
         title: "Recording Started",
-        description: "Generating and recording dummy sensor data.",
+        description: "Recording live sensor data.",
       });
     }
   };
@@ -173,7 +192,7 @@ export default function DashboardPage() {
             <CardTitle>Left Hand 3D Model</CardTitle>
           </CardHeader>
           <CardContent className="p-0 overflow-hidden">
-            <HandModel hand="left" sensorData={sensorData} isRecording={isRecording} />
+            <HandModel hand="left" sensorData={sensorData} isRecording={true} />
           </CardContent>
         </Card>
         <Card>
@@ -181,20 +200,22 @@ export default function DashboardPage() {
             <CardTitle>Right Hand 3D Model</CardTitle>
           </CardHeader>
           <CardContent className="p-0 overflow-hidden">
-            <HandModel hand="right" sensorData={sensorData} isRecording={isRecording} />
+            <HandModel hand="right" sensorData={sensorData} isRecording={true} />
           </CardContent>
         </Card>
       </div>
       
       <div className="mt-6">
-        <SessionAnalysis 
-          sessions={sessions} 
-          onClearSessions={handleClearSessions}
-          onDeleteSession={handleDeleteSession}
-          isRecording={isRecording}
-          onToggleRecording={handleToggleRecording}
-          onDownloadCsv={handleDownloadCsv}
-        />
+       {isClient && (
+          <SessionAnalysis 
+            sessions={sessions} 
+            onClearSessions={handleClearSessions}
+            onDeleteSession={handleDeleteSession}
+            isRecording={isRecording}
+            onToggleRecording={handleToggleRecording}
+            onDownloadCsv={handleDownloadCsv}
+          />
+        )}
       </div>
     </main>
   );
