@@ -30,14 +30,14 @@ export function SensorChart({ data, dataKey }: SensorChartProps) {
             dataKey="timestamp"
             type="number"
             domain={['dataMin', 'dataMax']}
-            tickFormatter={(value) => new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+            tickFormatter={(value) => `${value}s`}
             axisLine={false}
             tickLine={false}
             tickMargin={8}
             tick={{ fontSize: 12 }}
           />
           <YAxis 
-            domain={[0, 1024]} 
+            domain={[0, 100]} 
             axisLine={false} 
             tickLine={false} 
             tickMargin={8}

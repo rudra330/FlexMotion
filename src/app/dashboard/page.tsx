@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ref, onValue } from "firebase/database";
 import { SensorChart } from "@/components/sensor-chart";
 import { HandModel } from "@/components/hand-model";
@@ -22,12 +22,16 @@ export default function DashboardPage() {
   const [currentRecording, setCurrentRecording] = useState<RecordedDataPoint[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [isClient, setIsClient] = useState(false);
+  const startTimeRef = useRef<number | null>(null);
 
   const { toast } = useToast();
   const database = useDatabase();
 
   useEffect(() => {
     if (!database) return;
+    if (startTimeRef.current === null) {
+      startTimeRef.current = Date.now();
+    }
 
     const sensorDataRef = ref(database, 'sensorData');
 
@@ -44,15 +48,24 @@ export default function DashboardPage() {
         ];
         setSensorData(newSensorData);
 
-        const newPoint: RecordedDataPoint = { timestamp: Date.now() };
+        const now = Date.now();
+        const elapsedTime = startTimeRef.current ? Math.round((now - startTimeRef.current) / 1000) : 0;
+        
+        const newPoint: RecordedDataPoint = { timestamp: elapsedTime };
         newSensorData.forEach((val, i) => {
             newPoint[`sensor${i}`] = val;
         });
 
+        const newRawPoint: RecordedDataPoint = { timestamp: now };
+         newSensorData.forEach((val, i) => {
+            newRawPoint[`sensor${i}`] = val;
+        });
+
+
         setLiveData(currentData => [...currentData.slice(-149), newPoint]);
 
         if (isRecording) {
-            setCurrentRecording(currentData => [...currentData, newPoint]);
+            setCurrentRecording(currentData => [...currentData, newRawPoint]);
         }
       }
     });
@@ -191,7 +204,7 @@ export default function DashboardPage() {
             <CardTitle>Left Hand 3D Model</CardTitle>
           </CardHeader>
           <CardContent className="p-0 overflow-hidden">
-            <HandModel hand="left" sensorData={sensorData} isRecording={isRecording} />
+            <HandModel hand="left" sensorData={sensorData.map(v => v/100)} isRecording={isRecording} />
           </CardContent>
         </Card>
         <Card>
@@ -199,7 +212,7 @@ export default function DashboardPage() {
             <CardTitle>Right Hand 3D Model</CardTitle>
           </CardHeader>
           <CardContent className="p-0 overflow-hidden">
-            <HandModel hand="right" sensorData={sensorData} isRecording={isRecording} />
+            <HandModel hand="right" sensorData={sensorData.map(v => v/100)} isRecording={isRecording} />
           </CardContent>
         </Card>
       </div>
