@@ -34,12 +34,12 @@ export default function DashboardPage() {
       if (data) {
         // incoming data is 0-100, we need 0-1
         const newSensorData = [
-          data.finger1 / 100,
-          data.finger2 / 100,
-          data.finger3 / 100,
-          data.finger4 / 100,
-          data.finger5 / 100,
-          data.wrist / 100,
+          data.finger1,
+          data.finger2,
+          data.finger3,
+          data.finger4,
+          data.finger5,
+          data.wrist,
         ];
         setSensorData(newSensorData);
 
@@ -169,6 +169,7 @@ export default function DashboardPage() {
   }
 
   const chartData = isRecording ? currentRecording.slice(-150) : [];
+  const normalizedSensorData = sensorData.map(val => val / 1024);
 
   return (
     <main className="flex-1 p-4 sm:p-6 lg:p-8">
@@ -191,7 +192,7 @@ export default function DashboardPage() {
             <CardTitle>Left Hand 3D Model</CardTitle>
           </CardHeader>
           <CardContent className="p-0 overflow-hidden">
-            <HandModel hand="left" sensorData={sensorData} isRecording={true} />
+            <HandModel hand="left" sensorData={normalizedSensorData} isRecording={true} />
           </CardContent>
         </Card>
         <Card>
@@ -199,7 +200,7 @@ export default function DashboardPage() {
             <CardTitle>Right Hand 3D Model</CardTitle>
           </CardHeader>
           <CardContent className="p-0 overflow-hidden">
-            <HandModel hand="right" sensorData={sensorData} isRecording={true} />
+            <HandModel hand="right" sensorData={normalizedSensorData} isRecording={true} />
           </CardContent>
         </Card>
       </div>

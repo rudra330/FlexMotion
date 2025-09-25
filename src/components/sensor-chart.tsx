@@ -34,11 +34,11 @@ export function SensorChart({ data, dataKey }: SensorChartProps) {
             tick={{ fontSize: 12 }}
           />
           <YAxis 
-            domain={[0, 1]} 
+            domain={[0, 1024]} 
             axisLine={false} 
             tickLine={false} 
             tickMargin={8}
-            tickFormatter={(value) => value.toFixed(1)}
+            tickFormatter={(value) => value.toFixed(0)}
             tick={{ fontSize: 12 }} 
           />
           <ChartTooltip
