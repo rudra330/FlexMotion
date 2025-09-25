@@ -13,6 +13,7 @@ import { useDatabase } from "@/firebase";
 
 const SENSOR_COUNT = 6;
 export const SENSOR_NAMES = ["Thumb", "Index", "Middle", "Ring", "Pinky", "Wrist"];
+export const SENSOR_COLORS = ["#8884d8", "#82ca9d", "#ffc658", "#ff7300", "#0088fe", "#00C49F"];
 
 
 export default function DashboardPage() {
@@ -192,7 +193,11 @@ export default function DashboardPage() {
               <CardTitle>{name} Sensor</CardTitle>
             </CardHeader>
             <CardContent>
-              <SensorChart data={liveData} dataKey={`sensor${index}`} />
+              <SensorChart 
+                data={liveData} 
+                dataKey={`sensor${index}`} 
+                color={`var(--chart-${index + 1})`}
+              />
             </CardContent>
           </Card>
         ))}

@@ -7,16 +7,19 @@ import { ChartTooltipContent, ChartContainer, ChartTooltip } from "@/components/
 type SensorChartProps = {
   data: { timestamp: number; [key: string]: number }[];
   dataKey: string;
+  color?: string;
 };
 
-export function SensorChart({ data, dataKey }: SensorChartProps) {
+export function SensorChart({ data, dataKey, color }: SensorChartProps) {
+  const chartColor = color || "hsl(var(--accent))";
+  
   return (
     <div className="h-[200px] w-full">
       <ChartContainer
         config={{
-          value: {
+          [dataKey]: {
             label: "Sensor Value",
-            color: "hsl(var(--accent))",
+            color: chartColor,
           },
         }}
       >
@@ -46,15 +49,15 @@ export function SensorChart({ data, dataKey }: SensorChartProps) {
           />
           <ChartTooltip
             cursor={true}
-            content={<ChartTooltipContent indicator="line" nameKey="value" />}
+            content={<ChartTooltipContent indicator="line" nameKey={dataKey} />}
           />
           <Line
             dataKey={dataKey}
             type="monotone"
-            stroke="var(--color-value)"
+            stroke={`var(--color-${dataKey})`}
             strokeWidth={2}
             dot={false}
-            name="value"
+            name={dataKey}
           />
         </LineChart>
       </ChartContainer>
