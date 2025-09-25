@@ -17,6 +17,7 @@ export const SENSOR_NAMES = ["Thumb", "Index", "Middle", "Ring", "Pinky", "Wrist
 export default function DashboardPage() {
   const [isRecording, setIsRecording] = useState(false);
   const [sensorData, setSensorData] = useState<number[]>(Array(SENSOR_COUNT).fill(0));
+  const [liveData, setLiveData] = useState<RecordedDataPoint[]>([]);
   const [currentRecording, setCurrentRecording] = useState<RecordedDataPoint[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [isClient, setIsClient] = useState(false);
@@ -32,22 +33,24 @@ export default function DashboardPage() {
     const unsubscribe = onValue(sensorDataRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
-        // incoming data is 0-100, we need 0-1
         const newSensorData = [
-          data.finger1,
-          data.finger2,
-          data.finger3,
-          data.finger4,
-          data.finger5,
-          data.wrist,
+          data.finger1 || 0,
+          data.finger2 || 0,
+          data.finger3 || 0,
+          data.finger4 || 0,
+          data.finger5 || 0,
+          data.wrist || 0,
         ];
         setSensorData(newSensorData);
 
+        const newPoint: RecordedDataPoint = { timestamp: Date.now() };
+        newSensorData.forEach((val, i) => {
+            newPoint[`sensor${i}`] = val;
+        });
+
+        setLiveData(currentData => [...currentData.slice(-149), newPoint]);
+
         if (isRecording) {
-            const newPoint: RecordedDataPoint = { timestamp: Date.now() };
-            newSensorData.forEach((val, i) => {
-                newPoint[`sensor${i}`] = val;
-            });
             setCurrentRecording(currentData => [...currentData, newPoint]);
         }
       }
@@ -121,17 +124,29 @@ export default function DashboardPage() {
   };
 
   const handleDownloadCsv = () => {
-    if (currentRecording.length === 0) {
+    if (sessions.length === 0) {
       toast({
         title: "No data to export",
-        description: "Start recording to generate data first.",
+        description: "Record a session to generate data first.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // a session must be selected to download
+    const lastSession = sessions[sessions.length - 1];
+    if (!lastSession) {
+       toast({
+        title: "No session selected",
+        description: "Please select a session to download.",
         variant: "destructive",
       });
       return;
     }
 
+
     const headers = ["timestamp", ...SENSOR_NAMES].join(",");
-    const rows = currentRecording.map(d => {
+    const rows = lastSession.data.map(d => {
       const sensorValues = SENSOR_NAMES.map((_, i) => (d[`sensor${i}`] ?? 0).toFixed(4));
       return [d.timestamp, ...sensorValues].join(",");
     });
@@ -141,7 +156,7 @@ export default function DashboardPage() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", "flexmotion_data.csv");
+    link.setAttribute("download", `flexmotion_session_${lastSession.id}.csv`);
     link.style.visibility = "hidden";
     document.body.appendChild(link);
     link.click();
@@ -149,7 +164,7 @@ export default function DashboardPage() {
     URL.revokeObjectURL(url);
     toast({
       title: "Download Started",
-      description: "Your flexmotion_data.csv file is downloading.",
+      description: `Your ${`flexmotion_session_${lastSession.id}.csv`} file is downloading.`,
     });
   };
 
@@ -168,8 +183,7 @@ export default function DashboardPage() {
     });
   }
 
-  const chartData = isRecording ? currentRecording.slice(-150) : [];
-  const normalizedSensorData = sensorData.map(val => val / 1024);
+  const normalizedSensorData = sensorData.map(val => val / 100);
 
   return (
     <main className="flex-1 p-4 sm:p-6 lg:p-8">
@@ -180,7 +194,7 @@ export default function DashboardPage() {
               <CardTitle>{name} Sensor</CardTitle>
             </CardHeader>
             <CardContent>
-              <SensorChart data={chartData} dataKey={`sensor${index}`} />
+              <SensorChart data={liveData} dataKey={`sensor${index}`} />
             </CardContent>
           </Card>
         ))}

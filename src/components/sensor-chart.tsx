@@ -34,7 +34,7 @@ export function SensorChart({ data, dataKey }: SensorChartProps) {
             tick={{ fontSize: 12 }}
           />
           <YAxis 
-            domain={[0, 1024]} 
+            domain={[0, 100]} 
             axisLine={false} 
             tickLine={false} 
             tickMargin={8}

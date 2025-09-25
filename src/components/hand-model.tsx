@@ -156,25 +156,7 @@ export function HandModel({ hand, sensorData, isRecording }: HandModelProps) {
   useEffect(() => {
     const joints = fingerJointsRef.current;
     if (joints.length !== 5) return;
-    
-    const resetRotations = (group: THREE.Group) => {
-        group.rotation.x = 0;
-        group.rotation.y = 0;
-        group.rotation.z = 0;
-        group.children.forEach(child => {
-            if (child instanceof THREE.Group) {
-                resetRotations(child);
-            }
-        });
-    };
 
-    if (!isRecording) {
-      joints.forEach(resetRotations);
-      if (wristRef.current) resetRotations(wristRef.current);
-      if (handGroupRef.current) handGroupRef.current.rotation.set(0,0,0);
-      return;
-    }
-    
     if (sensorData.length === 6) {
       // sensorData maps to: thumb, index, middle, ring, pinky, wrist
       const setRotation = (joint: THREE.Group, value: number, maxAngle: number, fingerIndex: number) => {
@@ -214,5 +196,3 @@ export function HandModel({ hand, sensorData, isRecording }: HandModelProps) {
 
   return <div ref={mountRef} className="w-full h-[250px] cursor-grab active:cursor-grabbing rounded-b-lg" />;
 }
-
-    
