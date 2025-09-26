@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -14,6 +15,7 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { useDatabase } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function MotorControlPage() {
   const [airPressure, setAirPressure] = useState(0);
@@ -21,12 +23,19 @@ export default function MotorControlPage() {
   const [bldcTorque, setBldcTorque] = useState(0);
   const [bldcSpeed, setBldcSpeed] = useState(0);
   const [isControlEnabled, setIsControlEnabled] = useState(false);
+  const [isClient, setIsClient] = useState(false);
 
   const database = useDatabase();
   const { toast } = useToast();
 
   useEffect(() => {
-    if (isControlEnabled && database) {
+    // This ensures this code runs only on the client, preventing hydration errors.
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    // This effect runs only on the client and when dependencies change.
+    if (isClient && isControlEnabled && database) {
       const motorControlRef = ref(database, "motorControl");
       const motorData = {
         airPressure,
@@ -52,9 +61,11 @@ export default function MotorControlPage() {
     isControlEnabled,
     database,
     toast,
+    isClient,
   ]);
 
   const handleSwitchChange = (checked: boolean) => {
+    if (!isClient) return;
     setIsControlEnabled(checked);
     if (checked) {
       toast({
@@ -68,6 +79,50 @@ export default function MotorControlPage() {
       });
     }
   };
+
+  if (!isClient) {
+    return (
+        <main className="flex-1 p-4 sm:p-6 lg:p-8">
+            <div className="mb-6">
+                <Card>
+                    <CardHeader>
+                        <Skeleton className="h-8 w-1/2" />
+                        <Skeleton className="h-4 w-3/4 mt-2" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="flex items-center space-x-2">
+                             <Skeleton className="h-6 w-11 rounded-full" />
+                             <Skeleton className="h-6 w-40" />
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+             <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
+                 <Card>
+                     <CardHeader>
+                         <Skeleton className="h-8 w-1/2" />
+                         <Skeleton className="h-4 w-3/4 mt-2" />
+                     </CardHeader>
+                      <CardContent className="space-y-10 pt-6">
+                         <Skeleton className="h-10 w-full" />
+                     </CardContent>
+                 </Card>
+                 <Card>
+                      <CardHeader>
+                         <Skeleton className="h-8 w-1/2" />
+                         <Skeleton className="h-4 w-3/4 mt-2" />
+                     </CardHeader>
+                      <CardContent className="space-y-10 pt-6">
+                         <Skeleton className="h-10 w-full" />
+                         <Skeleton className="h-10 w-full" />
+                         <Skeleton className="h-10 w-full" />
+                     </CardContent>
+                 </Card>
+             </div>
+        </main>
+    );
+  }
+
 
   return (
     <main className="flex-1 p-4 sm:p-6 lg:p-8">
@@ -104,7 +159,7 @@ export default function MotorControlPage() {
               Control the pressure of the air pump motor.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-6 pt-6">
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <Label htmlFor="air-pressure">Pressure</Label>
@@ -136,7 +191,7 @@ export default function MotorControlPage() {
               Control the RPM, torque, and speed of the BLDC motor.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-6 pt-6">
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <Label htmlFor="bldc-rpm">RPM</Label>
@@ -203,3 +258,6 @@ export default function MotorControlPage() {
     </main>
   );
 }
+
+
+    
