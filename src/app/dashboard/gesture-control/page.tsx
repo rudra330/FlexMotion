@@ -31,8 +31,6 @@ type ChartDataPoint = {
 
 let lastVideoTime = -1;
 let handLandmarker: HandLandmarker | null = null;
-// Use a ref for the animation frame ID to persist it across renders
-const animationFrameId = React.createRef<number>();
 
 export default function GestureControlPage() {
   const [isStreaming, setIsStreaming] = useState(false);
@@ -45,6 +43,7 @@ export default function GestureControlPage() {
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const animationFrameId = useRef<number>();
   const { toast } = useToast();
   const database = useDatabase();
 
@@ -332,5 +331,3 @@ export default function GestureControlPage() {
     </main>
   );
 }
-
-    
