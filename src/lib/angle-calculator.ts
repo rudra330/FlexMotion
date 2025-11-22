@@ -1,3 +1,4 @@
+
 import type { NormalizedLandmark } from "@mediapipe/tasks-vision";
 
 export type HandAngles = {
@@ -84,45 +85,34 @@ export function calculateAngles(landmarks: NormalizedLandmark[]): HandAngles {
 
   // Calculate finger flexion angles
   // We'll simplify by taking the angle at the PIP joint as the primary flexion indicator.
-  const indexAngle = calculateAngle(lm[INDEX_FINGER_MCP], lm[INDEX_FINGER_PIP], lm[INDEX_FINGER_DIP]);
-  const middleAngle = calculateAngle(lm[MIDDLE_FINGER_MCP], lm[MIDDLE_FINGER_PIP], lm[MIDDLE_FINGER_DIP]);
-  const ringAngle = calculateAngle(lm[RING_FINGER_MCP], lm[RING_FINGER_PIP], lm[RING_FINGER_DIP]);
-  const pinkyAngle = calculateAngle(lm[PINKY_MCP], lm[PINKY_PIP], lm[PINKY_DIP]);
+  const indexAngle = calculateAngle(lm[INDEX_FINGER_MCP], lm[INDEX_FINGER_PIP], lm[INDEX_FINGER_TIP]);
+  const middleAngle = calculateAngle(lm[MIDDLE_FINGER_MCP], lm[MIDDLE_FINGER_PIP], lm[MIDDLE_FINGER_TIP]);
+  const ringAngle = calculateAngle(lm[RING_FINGER_MCP], lm[RING_FINGER_PIP], lm[RING_FINGER_TIP]);
+  const pinkyAngle = calculateAngle(lm[PINKY_MCP], lm[PINKY_PIP], lm[PINKY_TIP]);
   
   // Thumb is more complex, we'll use the angle at the MCP joint relative to the wrist
   const thumbAngle = calculateAngle(lm[THUMB_CMC], lm[THUMB_MCP], lm[THUMB_IP]);
-  
-  // Calculate wrist angles
-  // We need a reference vector for the forearm, which we approximate using the wrist and middle finger MCP.
-  const handDirection = lm[MIDDLE_finger_MCP].subtract(lm[WRIST]).normalize();
-
-  // Flexion/Extension: Angle in the Y-Z plane (assuming Y is up/down on screen)
-  const handDirectionYZ = new Vector3(0, handDirection.y, handDirection.z).normalize();
-  const neutralWristYZ = new Vector3(0, -1, 0); // Assuming neutral forearm points down
-  let wristFlexion = Math.acos(handDirectionYZ.dot(neutralWristYZ)) * (180.0 / Math.PI);
-  // Adjust angle based on direction
-  if(handDirection.z < 0) {
-    // This is a rough approximation. A true flexion/extension would require a more stable forearm vector.
-  }
   
   // For this simplified version, let's use a placeholder calculation for wrist.
   // A more accurate measurement requires tracking the arm, not just the hand.
   // We'll simulate flexion based on the wrist's relative Z position to the MCPs.
   const avgMcpZ = (lm[INDEX_FINGER_MCP].z + lm[PINKY_MCP].z) / 2;
-  const wristFlexionSim = (lm[WRIST].z - avgMcpZ) * 400; // Heuristic scaling factor
+  const wristFlexionSim = (lm[WRIST].z - avgMcpZ) * 800 + 90; // Heuristic scaling and offset
   
   return {
     fingers: {
-      // Angles are inverted (180 - angle) so 0 is straight and 180 is fully bent
-      thumb: 180 - thumbAngle,
-      index: 180 - indexAngle,
-      middle: 180 - middleAngle,
-      ring: 180 - ringAngle,
-      pinky: 180 - pinkyAngle,
+      // Angles are inverted (180 - angle) so 0 is straight and ~90+ is bent
+      thumb: Math.max(0, 180 - calculateAngle(lm[THUMB_IP], lm[THUMB_MCP], lm[THUMB_CMC])),
+      index: Math.max(0, 180 - indexAngle),
+      middle: Math.max(0, 180 - middleAngle),
+      ring: Math.max(0, 180 - ringAngle),
+      pinky: Math.max(0, 180 - pinkyAngle),
     },
     wrist: {
-      flexion: wristFlexionSim, // Using the simplified simulation
+      flexion: Math.max(0, Math.min(180, wristFlexionSim)), // Clamp between 0 and 180
       deviation: 0, // Placeholder, requires arm tracking
     },
   };
 }
+
+    
