@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Cog, HandMetal, LayoutDashboard } from "lucide-react";
+import { Cog, Hand, HandMetal, LayoutDashboard } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Header } from "@/components/header";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function DashboardLayout({
   children,
@@ -20,6 +21,12 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   return (
     <>
       <Sidebar>
@@ -34,22 +41,26 @@ export default function DashboardLayout({
         <SidebarContent>
           <SidebarMenu>
             <SidebarMenuItem>
-              <Link href="/dashboard" passHref>
-                <SidebarMenuButton asChild isActive={pathname === '/dashboard'} tooltip="Dashboard">
-                  <span>
+              <Link href="/dashboard" passHref legacyBehavior>
+                <SidebarMenuButton as="a" isActive={isClient && pathname === '/dashboard'} tooltip="Dashboard">
                     <LayoutDashboard />
                     <span className="group-data-[collapsible=icon]:hidden">Dashboard</span>
-                  </span>
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>
              <SidebarMenuItem>
-                <Link href="/dashboard/motor" passHref>
-                    <SidebarMenuButton asChild isActive={pathname === '/dashboard/motor'} tooltip="Motor">
-                        <span>
-                            <Cog />
-                            <span className="group-data-[collapsible=icon]:hidden">Motor</span>
-                        </span>
+                <Link href="/dashboard/motor" passHref legacyBehavior>
+                    <SidebarMenuButton as="a" isActive={isClient && pathname === '/dashboard/motor'} tooltip="Motor">
+                        <Cog />
+                        <span className="group-data-[collapsible=icon]:hidden">Motor</span>
+                    </SidebarMenuButton>
+                </Link>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+                <Link href="/dashboard/gesture-control" passHref legacyBehavior>
+                    <SidebarMenuButton as="a" isActive={isClient && pathname === '/dashboard/gesture-control'} tooltip="Hand Gesture Control">
+                        <Hand />
+                        <span className="group-data-[collapsible=icon]:hidden">Hand Gesture Control</span>
                     </SidebarMenuButton>
                 </Link>
             </SidebarMenuItem>
