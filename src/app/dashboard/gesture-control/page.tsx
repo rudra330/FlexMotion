@@ -135,7 +135,7 @@ export default function GestureControlPage() {
 
 
         if (isSendingToDb && database) {
-          const gestureRef = ref(database, 'gestureData');
+          const gestureRef = ref(database, 'handgesturedata');
           const dataToSend = {
               fingers: calculatedAngles.fingers,
               wrist: calculatedAngles.wrist,
