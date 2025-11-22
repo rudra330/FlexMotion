@@ -219,6 +219,7 @@ export default function GestureControlPage() {
         cancelAnimationFrame(animationFrameId.current);
       }
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isStreaming]);
 
   
