@@ -41,24 +41,24 @@ export default function DashboardLayout({
         <SidebarContent>
           <SidebarMenu>
             <SidebarMenuItem>
-              <Link href="/dashboard" passHref legacyBehavior>
-                <SidebarMenuButton as="a" isActive={isClient && pathname === '/dashboard'} tooltip="Dashboard">
+              <Link href="/dashboard">
+                <SidebarMenuButton isActive={isClient && pathname === '/dashboard'} tooltip="Dashboard">
                     <LayoutDashboard />
                     <span className="group-data-[collapsible=icon]:hidden">Dashboard</span>
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>
              <SidebarMenuItem>
-                <Link href="/dashboard/motor" passHref legacyBehavior>
-                    <SidebarMenuButton as="a" isActive={isClient && pathname === '/dashboard/motor'} tooltip="Motor">
+                <Link href="/dashboard/motor">
+                    <SidebarMenuButton isActive={isClient && pathname === '/dashboard/motor'} tooltip="Motor">
                         <Cog />
                         <span className="group-data-[collapsible=icon]:hidden">Motor</span>
                     </SidebarMenuButton>
                 </Link>
             </SidebarMenuItem>
             <SidebarMenuItem>
-                <Link href="/dashboard/gesture-control" passHref legacyBehavior>
-                    <SidebarMenuButton as="a" isActive={isClient && pathname === '/dashboard/gesture-control'} tooltip="Hand Gesture Control">
+                <Link href="/dashboard/gesture-control">
+                    <SidebarMenuButton isActive={isClient && pathname === '/dashboard/gesture-control'} tooltip="Hand Gesture Control">
                         <Hand />
                         <span className="group-data-[collapsible=icon]:hidden">Hand Gesture Control</span>
                     </SidebarMenuButton>
