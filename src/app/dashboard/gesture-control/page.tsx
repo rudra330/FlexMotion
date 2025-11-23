@@ -229,7 +229,7 @@ export default function GestureControlPage() {
 
   return (
     <main className="flex-1 p-4 sm:p-6 lg:p-8 flex flex-col gap-6">
-      <Card>
+      <Card className={isFullScreen ? 'hidden' : ''}>
         <CardHeader className="flex-row items-center justify-between">
           <div>
             <CardTitle>Hand Gesture Control</CardTitle>
@@ -256,7 +256,7 @@ export default function GestureControlPage() {
         </CardHeader>
       </Card>
       
-      {hasCameraPermission === false && (
+      {hasCameraPermission === false && !isFullScreen && (
         <Alert variant="destructive">
           <VideoOff className="h-4 w-4" />
           <AlertTitle>Camera Access Denied</AlertTitle>
@@ -267,8 +267,8 @@ export default function GestureControlPage() {
       )}
 
       <div className={`grid gap-6 ${isFullScreen ? 'grid-cols-1' : 'lg:grid-cols-3'}`}>
-          <div className={`${isFullScreen ? 'col-span-1' : 'lg:col-span-2'}`}>
-              <Card className="relative aspect-video overflow-hidden">
+          <div className={`${isFullScreen ? 'fixed inset-0 z-50 bg-background' : 'lg:col-span-2'}`}>
+              <Card className={`relative aspect-video overflow-hidden ${isFullScreen ? 'h-full w-full' : ''}`}>
                 <video ref={videoRef} className="w-full h-full object-cover transform -scale-x-100" autoPlay playsInline></video>
                 <canvas ref={canvasRef} className="absolute top-0 left-0 w-full h-full transform -scale-x-100"></canvas>
                  {!isStreaming && (
@@ -277,57 +277,60 @@ export default function GestureControlPage() {
                         <p className="text-muted-foreground">{isLandmarkerReady ? 'Camera is off' : 'Loading hand model...'}</p>
                     </div>
                  )}
+                 {isFullScreen && (
+                     <Button onClick={handleFullScreen} variant="outline" size="icon" className="absolute top-4 right-4 z-10">
+                        <Shrink/>
+                     </Button>
+                 )}
               </Card>
           </div>
 
-          {!isFullScreen && (
-              <div className="lg:col-span-1 grid grid-rows-2 gap-6">
-                  <Card>
-                      <CardHeader>
-                          <CardTitle>Real-time Angles</CardTitle>
-                          <CardDescription>Current computed angles for each joint.</CardDescription>
-                      </CardHeader>
-                       <CardContent className="grid grid-cols-3 gap-4 text-center">
-                          {fingerNames.map((key) => (
-                            <div key={key} className="p-2 bg-card rounded-lg">
-                              <p className="text-sm capitalize text-muted-foreground">{key}</p>
-                              <p className="text-2xl font-bold">{angles?.fingers[key]?.toFixed(0) ?? '-'}°</p>
-                            </div>
-                          ))}
-                           <div className="p-2 bg-card rounded-lg">
-                              <p className="text-sm capitalize text-muted-foreground">Wrist</p>
-                              <p className="text-2xl font-bold">{angles?.wrist.flexion.toFixed(0) ?? '-'}°</p>
-                            </div>
-                      </CardContent>
-                  </Card>
-                  <Card>
-                      <CardHeader>
-                          <CardTitle>Angle Trends</CardTitle>
-                           <CardDescription>Live chart of angle changes over time.</CardDescription>
-                      </CardHeader>
-                       <CardContent className="h-[250px] p-0">
-                          <ResponsiveContainer width="100%" height="100%">
-                              <LineChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
-                                  <CartesianGrid strokeDasharray="3 3" />
-                                  <XAxis dataKey="timestamp" hide/>
-                                  <YAxis domain={[0, 180]}/>
-                                  <Tooltip 
-                                    contentStyle={{ backgroundColor: 'hsl(var(--background))', border: '1px solid hsl(var(--border))' }}
-                                    formatter={(value: number) => `${value.toFixed(1)}°`}
-                                  />
-                                  <Legend />
-                                  <Line type="monotone" dataKey="thumb" name="Thumb" stroke="hsl(var(--chart-1))" dot={false} />
-                                  <Line type="monotone" dataKey="index" name="Index" stroke="hsl(var(--chart-2))" dot={false} />
-                                  <Line type="monotone" dataKey="middle" name="Middle" stroke="hsl(var(--chart-3))" dot={false} />
-                                  <Line type="monotone" dataKey="ring" name="Ring" stroke="hsl(var(--chart-4))" dot={false} />
-                                  <Line type="monotone" dataKey="pinky" name="Pinky" stroke="hsl(var(--chart-5))" dot={false} />
-                                  <Line type="monotone" dataKey="wrist" name="Wrist" stroke="hsl(var(--chart-6))" dot={false} />
-                              </LineChart>
-                          </ResponsiveContainer>
-                      </CardContent>
-                  </Card>
-              </div>
-          )}
+          <div className={`lg:col-span-1 grid-rows-2 gap-6 ${isFullScreen ? 'hidden' : 'grid'}`}>
+              <Card>
+                  <CardHeader>
+                      <CardTitle>Real-time Angles</CardTitle>
+                      <CardDescription>Current computed angles for each joint.</CardDescription>
+                  </CardHeader>
+                   <CardContent className="grid grid-cols-3 gap-4 text-center">
+                      {fingerNames.map((key) => (
+                        <div key={key} className="p-2 bg-card rounded-lg">
+                          <p className="text-sm capitalize text-muted-foreground">{key}</p>
+                          <p className="text-2xl font-bold">{angles?.fingers[key]?.toFixed(0) ?? '-'}°</p>
+                        </div>
+                      ))}
+                       <div className="p-2 bg-card rounded-lg">
+                          <p className="text-sm capitalize text-muted-foreground">Wrist</p>
+                          <p className="text-2xl font-bold">{angles?.wrist.flexion.toFixed(0) ?? '-'}°</p>
+                        </div>
+                  </CardContent>
+              </Card>
+              <Card>
+                  <CardHeader>
+                      <CardTitle>Angle Trends</CardTitle>
+                       <CardDescription>Live chart of angle changes over time.</CardDescription>
+                  </CardHeader>
+                   <CardContent className="h-[250px] p-0">
+                      <ResponsiveContainer width="100%" height="100%">
+                          <LineChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                              <CartesianGrid strokeDasharray="3 3" />
+                              <XAxis dataKey="timestamp" hide/>
+                              <YAxis domain={[0, 180]}/>
+                              <Tooltip 
+                                contentStyle={{ backgroundColor: 'hsl(var(--background))', border: '1px solid hsl(var(--border))' }}
+                                formatter={(value: number) => `${value.toFixed(1)}°`}
+                              />
+                              <Legend />
+                              <Line type="monotone" dataKey="thumb" name="Thumb" stroke="hsl(var(--chart-1))" dot={false} />
+                              <Line type="monotone" dataKey="index" name="Index" stroke="hsl(var(--chart-2))" dot={false} />
+                              <Line type="monotone" dataKey="middle" name="Middle" stroke="hsl(var(--chart-3))" dot={false} />
+                              <Line type="monotone" dataKey="ring" name="Ring" stroke="hsl(var(--chart-4))" dot={false} />
+                              <Line type="monotone" dataKey="pinky" name="Pinky" stroke="hsl(var(--chart-5))" dot={false} />
+                              <Line type="monotone" dataKey="wrist" name="Wrist" stroke="hsl(var(--chart-6))" dot={false} />
+                          </LineChart>
+                      </ResponsiveContainer>
+                  </CardContent>
+              </Card>
+          </div>
       </div>
     </main>
   );
