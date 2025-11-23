@@ -1,6 +1,7 @@
 
 import type { NormalizedLandmark } from "@mediapipe/tasks-vision";
 
+// --- Type Definitions ---
 export type HandAngles = {
   fingers: {
     thumb: number;
@@ -15,56 +16,54 @@ export type HandAngles = {
   };
 };
 
-/**
- * Represents a 3D vector.
- */
-class Vector3 {
-  x: number;
-  y: number;
-  z: number;
+type Vec3 = { x: number; y: number; z: number };
 
-  constructor(x = 0, y = 0, z = 0) {
-    this.x = x;
-    this.y = y;
-    this.z = z;
-  }
+// --- Vector Math Utilities ---
+const vec3 = {
+  fromLandmark: (lm: NormalizedLandmark): Vec3 => ({ x: lm.x, y: lm.y, z: lm.z }),
+  subtract: (a: Vec3, b: Vec3): Vec3 => ({ x: a.x - b.x, y: a.y - b.y, z: a.z - b.z }),
+  normalize: (v: Vec3): Vec3 => {
+    const len = Math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+    return len > 0 ? { x: v.x / len, y: v.y / len, z: v.z / len } : { x: 0, y: 0, z: 0 };
+  },
+  dot: (a: Vec3, b: Vec3): number => a.x * b.x + a.y * b.y + a.z * b.z,
+};
 
-  static fromLandmark(lm: NormalizedLandmark): Vector3 {
-    return new Vector3(lm.x, lm.y, lm.z);
-  }
-
-  subtract(v: Vector3): Vector3 {
-    return new Vector3(this.x - v.x, this.y - v.y, this.z - v.z);
-  }
-
-  dot(v: Vector3): number {
-    return this.x * v.x + this.y * v.y + this.z * v.z;
-  }
-
-  magnitude(): number {
-    return Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z);
-  }
-
-  normalize(): Vector3 {
-    const mag = this.magnitude();
-    if (mag === 0) return new Vector3();
-    return new Vector3(this.x / mag, this.y / mag, this.z / mag);
-  }
-}
+// --- Angle Calculation Logic ---
 
 /**
- * Calculates the angle between three 3D points in degrees.
- * The angle is computed at point `p2`.
+ * Calculates the angle between three 3D points in degrees, with 0 being a straight line.
+ * The angle is computed at point `b`.
  */
-function calculateAngle(p1: Vector3, p2: Vector3, p3: Vector3): number {
-  const v1 = p1.subtract(p2).normalize();
-  const v2 = p3.subtract(p2).normalize();
-  const dotProduct = v1.dot(v2);
-  // Clamp dotProduct to avoid Math.acos errors due to floating point inaccuracies
-  const clampedDot = Math.max(-1.0, Math.min(1.0, dotProduct));
-  const angleRad = Math.acos(clampedDot);
-  return angleRad * (180.0 / Math.PI);
-}
+const calculateAngle = (a: Vec3, b: Vec3, c: Vec3): number => {
+  const v1 = vec3.normalize(vec3.subtract(a, b));
+  const v2 = vec3.normalize(vec3.subtract(c, b));
+  const dotProduct = vec3.dot(v1, v2);
+  // Ensure the dot product is within the valid range for acos to prevent NaN
+  const angleRad = Math.acos(Math.max(-1, Math.min(1, dotProduct)));
+  // Convert to degrees and invert so 0 is straight
+  return 180 - angleRad * (180 / Math.PI);
+};
+
+/**
+ * Estimates wrist flexion based on the tilt of the palm.
+ * This is an approximation as true flexion requires forearm tracking.
+ */
+const calculateWristFlexion = (landmarks: Vec3[]): number => {
+  const wrist = landmarks[0];
+  const indexMcp = landmarks[5];
+  const pinkyMcp = landmarks[17];
+
+  // A vector representing the horizontal axis of the palm
+  const palmVector = vec3.normalize(vec3.subtract(pinkyMcp, indexMcp));
+  
+  // Simplified flexion based on the tilt of the palm's y-axis.
+  let flexion = Math.asin(palmVector.y) * (180 / Math.PI);
+  
+  // Clamp and adjust the value to a more intuitive 0-180 degree range
+  flexion = Math.max(0, Math.min(180, 90 + flexion));
+  return flexion;
+};
 
 
 /**
@@ -73,7 +72,7 @@ function calculateAngle(p1: Vector3, p2: Vector3, p3: Vector3): number {
  * @returns An object containing the calculated angles for fingers and wrist.
  */
 export function calculateAngles(landmarks: NormalizedLandmark[]): HandAngles {
-  const lm = landmarks.map(Vector3.fromLandmark);
+  const lm = landmarks.map(vec3.fromLandmark);
 
   // Hand landmark indices
   const WRIST = 0;
@@ -83,34 +82,17 @@ export function calculateAngles(landmarks: NormalizedLandmark[]): HandAngles {
   const RING_FINGER_MCP = 13, RING_FINGER_PIP = 14, RING_FINGER_DIP = 15, RING_FINGER_TIP = 16;
   const PINKY_MCP = 17, PINKY_PIP = 18, PINKY_DIP = 19, PINKY_TIP = 20;
 
-  // Calculate finger flexion angles
-  // We'll simplify by taking the angle at the PIP joint as the primary flexion indicator.
-  const indexAngle = calculateAngle(lm[INDEX_FINGER_MCP], lm[INDEX_FINGER_PIP], lm[INDEX_FINGER_TIP]);
-  const middleAngle = calculateAngle(lm[MIDDLE_FINGER_MCP], lm[MIDDLE_FINGER_PIP], lm[MIDDLE_FINGER_TIP]);
-  const ringAngle = calculateAngle(lm[RING_FINGER_MCP], lm[RING_FINGER_PIP], lm[RING_FINGER_TIP]);
-  const pinkyAngle = calculateAngle(lm[PINKY_MCP], lm[PINKY_PIP], lm[PINKY_TIP]);
-  
-  // Thumb is more complex, we'll use the angle at the MCP joint relative to the wrist
-  const thumbAngle = calculateAngle(lm[THUMB_CMC], lm[THUMB_MCP], lm[THUMB_IP]);
-  
-  // For this simplified version, let's use a placeholder calculation for wrist.
-  // A more accurate measurement requires tracking the arm, not just the hand.
-  // We'll simulate flexion based on the wrist's relative Z position to the MCPs.
-  const avgMcpZ = (lm[INDEX_FINGER_MCP].z + lm[PINKY_MCP].z) / 2;
-  const wristFlexionSim = (lm[WRIST].z - avgMcpZ) * 800 + 90; // Heuristic scaling and offset
-  
   return {
     fingers: {
-      // Angles are inverted (180 - angle) so 0 is straight and ~90+ is bent
-      thumb: Math.max(0, 180 - calculateAngle(lm[THUMB_IP], lm[THUMB_MCP], lm[THUMB_CMC])),
-      index: Math.max(0, 180 - indexAngle),
-      middle: Math.max(0, 180 - middleAngle),
-      ring: Math.max(0, 180 - ringAngle),
-      pinky: Math.max(0, 180 - pinkyAngle),
+      thumb: calculateAngle(lm[THUMB_IP], lm[THUMB_MCP], lm[THUMB_CMC]),
+      index: calculateAngle(lm[INDEX_FINGER_MCP], lm[INDEX_FINGER_PIP], lm[INDEX_FINGER_TIP]),
+      middle: calculateAngle(lm[MIDDLE_FINGER_MCP], lm[MIDDLE_FINGER_PIP], lm[MIDDLE_FINGER_TIP]),
+      ring: calculateAngle(lm[RING_FINGER_MCP], lm[RING_FINGER_PIP], lm[RING_FINGER_TIP]),
+      pinky: calculateAngle(lm[PINKY_MCP], lm[PINKY_PIP], lm[PINKY_TIP]),
     },
     wrist: {
-      flexion: Math.max(0, Math.min(180, wristFlexionSim)), // Clamp between 0 and 180
-      deviation: 0, // Placeholder, requires arm tracking
+      flexion: calculateWristFlexion(lm),
+      deviation: 0, // Placeholder, as true deviation requires arm tracking
     },
   };
 }

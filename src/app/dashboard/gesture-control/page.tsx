@@ -89,7 +89,7 @@ export default function GestureControlPage() {
         stream.getTracks().forEach(track => track.stop());
       }
     };
-  }, [toast]); // Keep toast in dependency array if it's from a custom hook that could change
+  }, [toast]);
 
   const predictWebcam = async () => {
     if (!videoRef.current || !canvasRef.current || !handLandmarker || !isStreaming) return;
@@ -100,14 +100,15 @@ export default function GestureControlPage() {
 
     if (!canvasCtx) return;
     
-    if (video.videoWidth > 0 && video.videoHeight > 0) {
+    // Adjust canvas to video resolution for correct drawing
+    if (video.videoWidth > 0 && (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight)) {
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
     }
 
     if (video.currentTime !== lastVideoTime) {
       lastVideoTime = video.currentTime;
-      const results = await handLandmarker.detectForVideo(video, Date.now());
+      const results = handLandmarker.detectForVideo(video, Date.now());
 
       canvasCtx.save();
       canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
@@ -137,8 +138,7 @@ export default function GestureControlPage() {
         if (isSendingToDb && database) {
           const gestureRef = ref(database, 'handgesturedata');
           const dataToSend = {
-              fingers: calculatedAngles.fingers,
-              wrist: calculatedAngles.wrist,
+              ...calculatedAngles,
               timestamp: serverTimestamp()
           };
           set(gestureRef, dataToSend).catch(e => console.error("Firebase write failed:", e));
@@ -171,7 +171,7 @@ export default function GestureControlPage() {
     }
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720 } });
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1280 }, height: { ideal: 720 } } });
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           videoRef.current.addEventListener('loadeddata', () => {
@@ -206,7 +206,7 @@ export default function GestureControlPage() {
 
    // Effect to start/stop prediction loop based on isStreaming state
   useEffect(() => {
-    if (isStreaming) {
+    if (isStreaming && handLandmarker) {
       predictWebcam();
     } else {
       if (animationFrameId.current) {
@@ -220,7 +220,7 @@ export default function GestureControlPage() {
       }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isStreaming]);
+  }, [isStreaming, isLandmarkerReady]); // Re-added isLandmarkerReady to deps
 
   
   const handleFullScreen = () => setIsFullScreen(!isFullScreen);
@@ -250,7 +250,7 @@ export default function GestureControlPage() {
               {isStreaming ? "Stop Camera" : "Start Camera"}
             </Button>
              <Button onClick={handleFullScreen} variant="outline" size="icon">
-                {isFullScreen ? <Shrink/> : <Expand/>}
+                <Expand/>
             </Button>
           </div>
         </CardHeader>
@@ -267,22 +267,28 @@ export default function GestureControlPage() {
       )}
 
       <div className={`grid gap-6 ${isFullScreen ? 'grid-cols-1' : 'lg:grid-cols-3'}`}>
-          <div className={`${isFullScreen ? 'fixed inset-0 z-50 bg-background' : 'lg:col-span-2'}`}>
-              <Card className={`relative aspect-video overflow-hidden ${isFullScreen ? 'h-full w-full' : ''}`}>
+          <div className={`${isFullScreen ? 'fixed inset-0 z-50 bg-background' : 'lg:col-span-2 relative'}`}>
+              <div className={`relative w-full h-full ${isFullScreen ? '' : 'aspect-video'}`}>
                 <video ref={videoRef} className="w-full h-full object-cover transform -scale-x-100" autoPlay playsInline></video>
                 <canvas ref={canvasRef} className="absolute top-0 left-0 w-full h-full transform -scale-x-100"></canvas>
                  {!isStreaming && (
-                    <div className="absolute inset-0 bg-secondary flex flex-col items-center justify-center">
+                    <div className="absolute inset-0 bg-secondary flex flex-col items-center justify-center rounded-lg">
                         <Video className="h-16 w-16 text-muted-foreground mb-4"/>
                         <p className="text-muted-foreground">{isLandmarkerReady ? 'Camera is off' : 'Loading hand model...'}</p>
                     </div>
                  )}
                  {isFullScreen && (
-                     <Button onClick={handleFullScreen} variant="outline" size="icon" className="absolute top-4 right-4 z-10">
-                        <Shrink/>
-                     </Button>
+                    <div className="absolute top-4 right-4 z-[60] flex items-center gap-2">
+                         <Button onClick={toggleCamera} variant={isStreaming ? "destructive" : "default"} disabled={!isLandmarkerReady}>
+                            {isStreaming ? <CameraOff className="mr-2 h-4 w-4" /> : <Camera className="mr-2 h-4 w-4" />}
+                            {isStreaming ? "Stop Camera" : "Start Camera"}
+                        </Button>
+                        <Button onClick={handleFullScreen} variant="outline" size="icon">
+                            <Shrink/>
+                        </Button>
+                    </div>
                  )}
-              </Card>
+              </div>
           </div>
 
           <div className={`lg:col-span-1 grid-rows-2 gap-6 ${isFullScreen ? 'hidden' : 'grid'}`}>
@@ -293,12 +299,12 @@ export default function GestureControlPage() {
                   </CardHeader>
                    <CardContent className="grid grid-cols-3 gap-4 text-center">
                       {fingerNames.map((key) => (
-                        <div key={key} className="p-2 bg-card rounded-lg">
+                        <div key={key} className="p-2 bg-muted rounded-lg">
                           <p className="text-sm capitalize text-muted-foreground">{key}</p>
                           <p className="text-2xl font-bold">{angles?.fingers[key]?.toFixed(0) ?? '-'}°</p>
                         </div>
                       ))}
-                       <div className="p-2 bg-card rounded-lg">
+                       <div className="p-2 bg-muted rounded-lg">
                           <p className="text-sm capitalize text-muted-foreground">Wrist</p>
                           <p className="text-2xl font-bold">{angles?.wrist.flexion.toFixed(0) ?? '-'}°</p>
                         </div>
@@ -325,7 +331,7 @@ export default function GestureControlPage() {
                               <Line type="monotone" dataKey="middle" name="Middle" stroke="hsl(var(--chart-3))" dot={false} />
                               <Line type="monotone" dataKey="ring" name="Ring" stroke="hsl(var(--chart-4))" dot={false} />
                               <Line type="monotone" dataKey="pinky" name="Pinky" stroke="hsl(var(--chart-5))" dot={false} />
-                              <Line type="monotone" dataKey="wrist" name="Wrist" stroke="hsl(var(--chart-6))" dot={false} />
+                              <Line type="monotone" dataKey="wrist" name="Wrist" stroke="hsl(var(--accent))" dot={false} />
                           </LineChart>
                       </ResponsiveContainer>
                   </CardContent>
@@ -335,3 +341,5 @@ export default function GestureControlPage() {
     </main>
   );
 }
+
+    
