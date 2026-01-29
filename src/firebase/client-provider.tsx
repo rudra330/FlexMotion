@@ -17,9 +17,13 @@ export function FirebaseClientProvider({ children }: FirebaseClientProviderProps
 
   useEffect(() => {
     if (firebaseServices.auth && !firebaseServices.auth.currentUser) {
-      signInAnonymously(firebaseServices.auth).catch((error) => {
-        console.error("Anonymous sign-in failed:", error);
-      });
+      signInAnonymously(firebaseServices.auth)
+        .then(() => {
+          console.log("Authenticated anonymously");
+        })
+        .catch((error) => {
+          console.error("Authentication error:", error);
+        });
     }
   }, [firebaseServices.auth]);
 
