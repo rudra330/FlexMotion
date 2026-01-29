@@ -136,12 +136,20 @@ export default function GestureControlPage() {
 
 
         if (isSendingToDb && database && !isUserLoading) {
-          const gestureRef = ref(database, 'handgesturedata');
-          const dataToSend = {
-              ...calculatedAngles,
-              timestamp: serverTimestamp()
-          };
-          set(gestureRef, dataToSend).catch(e => console.error("Firebase write failed:", e));
+            const gestureRef = ref(database, 'handgesturedata');
+            const dataToSend = {
+                ...calculatedAngles,
+                status: "active",
+                timestamp: serverTimestamp()
+            };
+            set(gestureRef, dataToSend).catch(e => {
+                console.error("Firebase write failed. Full error object:", e);
+                toast({
+                    title: "Firebase Write Error",
+                    description: `Could not send gesture data. Reason: ${e.message}`,
+                    variant: "destructive",
+                });
+            });
         }
 
       } else {
@@ -153,7 +161,7 @@ export default function GestureControlPage() {
     if (isStreaming) {
       animationFrameId.current = requestAnimationFrame(predictWebcam);
     }
-  }, [isStreaming, database, isSendingToDb, isUserLoading]);
+  }, [isStreaming, database, isSendingToDb, isUserLoading, toast]);
 
   // 2. Handle Camera
   const toggleCamera = () => {
@@ -240,7 +248,7 @@ export default function GestureControlPage() {
                 id="db-streaming"
                 checked={isSendingToDb}
                 onCheckedChange={setIsSendingToDb}
-                disabled={!isStreaming}
+                disabled={!isStreaming || isUserLoading}
               />
               <Label htmlFor="db-streaming">Send to Firebase</Label>
             </div>
@@ -267,7 +275,7 @@ export default function GestureControlPage() {
 
       <div className={`grid gap-6 ${isFullScreen ? 'grid-cols-1' : 'lg:grid-cols-3'}`}>
           <div className={`${isFullScreen ? 'fixed inset-0 z-50 bg-background' : 'lg:col-span-2 relative'}`}>
-              <div className={`relative w-full h-full ${isFullScreen ? '' : 'aspect-video'}`}>
+              <div className="relative w-full h-full">
                 <video ref={videoRef} className="w-full h-full object-cover transform -scale-x-100" autoPlay playsInline></video>
                 <canvas ref={canvasRef} className="absolute top-0 left-0 w-full h-full transform -scale-x-100"></canvas>
                  {!isStreaming && (

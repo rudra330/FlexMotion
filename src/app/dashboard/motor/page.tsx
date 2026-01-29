@@ -99,11 +99,11 @@ export default function MotorControlPage() {
     }
     
     set(motorControlRef, dataToWrite).catch((error) => {
-        console.error("Failed to write motor control data:", error);
+        console.error("Failed to write motor control data. Full error object:", error);
         if (isControlEnabled) { // Only show toast if writes are expected
             toast({
               title: "Firebase Write Error",
-              description: "Could not send motor control data to the database.",
+              description: `Could not send motor data. Reason: ${error.message}`,
               variant: "destructive",
             });
         }
@@ -115,12 +115,14 @@ export default function MotorControlPage() {
   const handleSwitchChange = (checked: boolean) => {
     if (!isClient) return;
     setIsControlEnabled(checked);
-    toast({
-      title: checked ? "Realtime Control Enabled" : "Realtime Control Disabled",
-      description: checked
-        ? "Motor values are now being sent to the database."
-        : "Motor control cycle stopped.",
-    });
+    if (!isUserLoading) {
+        toast({
+          title: checked ? "Realtime Control Enabled" : "Realtime Control Disabled",
+          description: checked
+            ? "Motor values are now being sent to the database."
+            : "Motor control cycle stopped.",
+        });
+    }
   };
 
   if (!isClient) {
@@ -186,6 +188,7 @@ export default function MotorControlPage() {
                 id="motor-control-switch"
                 checked={isControlEnabled}
                 onCheckedChange={handleSwitchChange}
+                disabled={isUserLoading}
               />
               <Label htmlFor="motor-control-switch">
                 Enable Realtime Control
