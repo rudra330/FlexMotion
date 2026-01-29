@@ -1,16 +1,6 @@
 {
   "rules": {
-    "motorControl": {
-      ".read": true,
-      ".write": true
-    },
-    "sensorData": {
-      ".read": true,
-      ".write": true
-    },
-    "handgesturedata": {
-      ".read": true,
-      ".write": true
-    }
+    ".read": true,
+    ".write": true
   }
 }
