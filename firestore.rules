@@ -12,10 +12,8 @@
  *
  * Key Security Decisions:
  * - Public read access is granted for the `/sensor_data` collection to facilitate easy data retrieval.
- * - Write access to the `/sensor_data` collection is restricted to authenticated users to prevent
- *   unauthorized data modification.
+ * - Write access is granted publicly for rapid prototyping.
  * - No user listing is allowed to prevent information disclosure.
- * - Data shape is not strictly validated to allow for rapid prototyping and iteration.
  *
  * Denormalization for Authorization:
  *  - This setup does not have any denormalization as the security is very basic.
@@ -28,20 +26,11 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Grants public read access to sensor data while restricting write access to authenticated users.
+     * @description Grants public read and write access to sensor data.
      * @path /sensor_data/{sensorDataId}
-     * @allow (get, list): Any user can read sensor data.
-     * @allow (create, update, delete): Only authenticated users can create, update, or delete sensor data.
-     * @deny (create, update, delete): Unauthenticated users cannot write sensor data.
-     * @principle Enforces authentication for writes while allowing public reads for sensor data.
      */
     match /sensor_data/{sensorDataId} {
-      allow get: if true;
-      allow list: if true;
-
-      allow create: if isSignedIn();
-      allow update: if isSignedIn() && resource != null;
-      allow delete: if isSignedIn() && resource != null;
+      allow read, write: if true;
     }
 
     // --- Helper functions ---
