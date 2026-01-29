@@ -13,7 +13,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
-import { useDatabase } from "@/firebase";
+import { useDatabase, useFirebase } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
@@ -29,6 +29,7 @@ export default function MotorControlPage() {
   const [isCycleActive, setIsCycleActive] = useState(false);
 
   const database = useDatabase();
+  const { isUserLoading } = useFirebase();
   const { toast } = useToast();
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -66,7 +67,7 @@ export default function MotorControlPage() {
 
   // Effect for writing all motor control data to Firebase
   useEffect(() => {
-    if (!isClient || !database) return;
+    if (!isClient || !database || isUserLoading) return;
 
     const motorControlRef = ref(database, "motorControl");
     
@@ -108,7 +109,7 @@ export default function MotorControlPage() {
         }
     });
 
-  }, [isControlEnabled, isCycleActive, speed, onTime, offTime, isClient, database, toast]);
+  }, [isControlEnabled, isCycleActive, speed, onTime, offTime, isClient, database, toast, isUserLoading]);
 
 
   const handleSwitchChange = (checked: boolean) => {

@@ -1,13 +1,13 @@
 
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   HandLandmarker,
   FilesetResolver,
   DrawingUtils
 } from '@mediapipe/tasks-vision';
-import { useDatabase } from '@/firebase';
+import { useDatabase, useFirebase } from '@/firebase';
 import { ref, set, serverTimestamp } from 'firebase/database';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -46,6 +46,7 @@ export default function GestureControlPage() {
   const animationFrameId = useRef<number>();
   const { toast } = useToast();
   const database = useDatabase();
+  const { isUserLoading } = useFirebase();
 
   // 1. Initialize HandLandmarker
   useEffect(() => {
@@ -91,7 +92,7 @@ export default function GestureControlPage() {
     };
   }, [toast]);
 
-  const predictWebcam = async () => {
+  const predictWebcam = useCallback(async () => {
     if (!videoRef.current || !canvasRef.current || !handLandmarker || !isStreaming) return;
 
     const video = videoRef.current;
@@ -100,7 +101,6 @@ export default function GestureControlPage() {
 
     if (!canvasCtx) return;
     
-    // Adjust canvas to video resolution for correct drawing
     if (video.videoWidth > 0 && (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight)) {
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
@@ -135,7 +135,7 @@ export default function GestureControlPage() {
         setChartData(prev => [...prev.slice(-49), newDataPoint]);
 
 
-        if (isSendingToDb && database) {
+        if (isSendingToDb && database && !isUserLoading) {
           const gestureRef = ref(database, 'handgesturedata');
           const dataToSend = {
               ...calculatedAngles,
@@ -153,7 +153,7 @@ export default function GestureControlPage() {
     if (isStreaming) {
       animationFrameId.current = requestAnimationFrame(predictWebcam);
     }
-  };
+  }, [isStreaming, database, isSendingToDb, isUserLoading]);
 
   // 2. Handle Camera
   const toggleCamera = () => {
@@ -219,8 +219,7 @@ export default function GestureControlPage() {
         cancelAnimationFrame(animationFrameId.current);
       }
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isStreaming, isLandmarkerReady]); // Re-added isLandmarkerReady to deps
+  }, [isStreaming, isLandmarkerReady, predictWebcam]);
 
   
   const handleFullScreen = () => setIsFullScreen(!isFullScreen);
@@ -341,5 +340,3 @@ export default function GestureControlPage() {
     </main>
   );
 }
-
-    
