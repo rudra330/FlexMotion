@@ -275,11 +275,11 @@ export default function GestureControlPage() {
 
       <div className={`grid gap-6 ${isFullScreen ? 'grid-cols-1' : 'lg:grid-cols-3'}`}>
           <div className={`${isFullScreen ? 'fixed inset-0 z-50 bg-background' : 'lg:col-span-2 relative'}`}>
-              <div className="relative w-full h-full">
+              <div className="relative w-full aspect-video overflow-hidden rounded-lg">
                 <video ref={videoRef} className="w-full h-full object-cover transform -scale-x-100" autoPlay playsInline></video>
                 <canvas ref={canvasRef} className="absolute top-0 left-0 w-full h-full transform -scale-x-100"></canvas>
                  {!isStreaming && (
-                    <div className="absolute inset-0 bg-secondary flex flex-col items-center justify-center rounded-lg">
+                    <div className="absolute inset-0 bg-secondary flex flex-col items-center justify-center">
                         <Video className="h-16 w-16 text-muted-foreground mb-4"/>
                         <p className="text-muted-foreground">{isLandmarkerReady ? 'Camera is off' : 'Loading hand model...'}</p>
                     </div>
