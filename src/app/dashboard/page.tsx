@@ -203,21 +203,13 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 mt-6">
+      <div className="mt-6">
         <Card>
           <CardHeader>
-            <CardTitle>Left Hand 3D Model</CardTitle>
+            <CardTitle>Custom Hand Model</CardTitle>
           </CardHeader>
-          <CardContent className="p-0 overflow-hidden">
-            <HandModel hand="left" sensorData={sensorData.map(v => v/100)} isRecording={isRecording} />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Right Hand 3D Model</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0 overflow-hidden">
-            <HandModel hand="right" sensorData={sensorData.map(v => v/100)} isRecording={isRecording} />
+          <CardContent className="p-0 overflow-hidden h-[400px]">
+            <HandModel sensorData={sensorData.map(v => v / 100)} isRecording={isRecording} />
           </CardContent>
         </Card>
       </div>
