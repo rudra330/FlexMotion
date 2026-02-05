@@ -203,13 +203,13 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      <div className="mt-6">
+       <div className="mt-6">
         <Card>
           <CardHeader>
-            <CardTitle>Custom Hand Model</CardTitle>
+            <CardTitle>Custom Hand Model Control</CardTitle>
           </CardHeader>
-          <CardContent className="p-0 overflow-hidden h-[400px]">
-            <HandModel sensorData={sensorData.map(v => v / 100)} isRecording={isRecording} />
+          <CardContent className="h-[500px] overflow-hidden">
+            <HandModel sensorData={sensorData.map(v => v / 1024)} />
           </CardContent>
         </Card>
       </div>
