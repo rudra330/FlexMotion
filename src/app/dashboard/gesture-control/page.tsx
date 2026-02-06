@@ -18,6 +18,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Camera, CameraOff, Video, VideoOff, Expand, Shrink } from 'lucide-react';
 import { calculateAngles, type HandAngles } from '@/lib/angle-calculator';
+import { cn } from "@/lib/utils";
 
 type ChartDataPoint = {
   timestamp: number;
@@ -275,9 +276,9 @@ export default function GestureControlPage() {
 
       <div className={`grid gap-6 ${isFullScreen ? 'grid-cols-1' : 'lg:grid-cols-3'}`}>
           <div className={`${isFullScreen ? 'fixed inset-0 z-50 bg-background' : 'lg:col-span-2 relative'}`}>
-              <div className="relative w-full aspect-video overflow-hidden rounded-lg">
+              <div className={cn("relative w-full overflow-hidden rounded-lg", isFullScreen ? "h-full" : "aspect-video")}>
                 <video ref={videoRef} className="w-full h-full object-cover transform -scale-x-100" autoPlay playsInline></video>
-                <canvas ref={canvasRef} className="absolute top-0 left-0 w-full h-full transform -scale-x-100"></canvas>
+                <canvas ref={canvasRef} className="absolute top-0 left-0 w-full h-full object-cover transform -scale-x-100"></canvas>
                  {!isStreaming && (
                     <div className="absolute inset-0 bg-secondary flex flex-col items-center justify-center">
                         <Video className="h-16 w-16 text-muted-foreground mb-4"/>
