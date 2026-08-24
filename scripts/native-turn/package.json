@@ -1,0 +1,8 @@
+{
+  "name": "motionmirror-native-turn-runtime",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "node-turn": "0.0.6"
+  }
+}

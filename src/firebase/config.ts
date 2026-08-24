@@ -5,5 +5,6 @@ export const firebaseConfig = {
   "authDomain": "studio-2428193126-b3db0.firebaseapp.com",
   "measurementId": "",
   "messagingSenderId": "324958843153",
-  "databaseURL": "https://studio-2428193126-b3db0-default-rtdb.firebaseio.com"
+  "databaseURL": "https://studio-2428193126-b3db0-default-rtdb.firebaseio.com",
+  "storageBucket": "studio-2428193126-b3db0.firebasestorage.app"
 }

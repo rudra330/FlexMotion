@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useEffect, type ReactNode } from 'react';
+import React, { useEffect, useState, type ReactNode } from 'react';
 import { FirebaseProvider } from '@/firebase/provider';
 import { initializeFirebase } from '@/firebase';
 import { signInAnonymously } from 'firebase/auth';
@@ -10,14 +10,14 @@ interface FirebaseClientProviderProps {
 }
 
 export function FirebaseClientProvider({ children }: FirebaseClientProviderProps) {
-  const firebaseServices = useMemo(() => {
-    // Initialize Firebase on the client side, once per component mount.
-    return initializeFirebase();
-  }, []); // Empty dependency array ensures this runs only once on mount
+  const [firebaseServices, setFirebaseServices] = useState<ReturnType<typeof initializeFirebase> | null>(null);
 
   useEffect(() => {
-    if (firebaseServices.auth && !firebaseServices.auth.currentUser) {
-      signInAnonymously(firebaseServices.auth)
+    const services = initializeFirebase();
+    setFirebaseServices(services);
+
+    if (!services.auth.currentUser) {
+      signInAnonymously(services.auth)
         .then(() => {
           console.log("Authenticated anonymously");
         })
@@ -25,7 +25,15 @@ export function FirebaseClientProvider({ children }: FirebaseClientProviderProps
           console.error("Authentication error:", error);
         });
     }
-  }, [firebaseServices.auth]);
+  }, []);
+
+  if (!firebaseServices) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-950 text-sm text-slate-400">
+        Connecting to secure services...
+      </div>
+    );
+  }
 
   return (
     <FirebaseProvider

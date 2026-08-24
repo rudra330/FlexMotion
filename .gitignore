@@ -2,6 +2,7 @@
 
 # dependencies
 /node_modules
+/scripts/native-turn/node_modules/
 /.pnp
 .pnp.*
 .yarn/*
@@ -25,6 +26,7 @@
 *.pem
 
 # debug
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -43,3 +45,7 @@ next-env.d.ts
 # firebase
 firebase-debug.log
 firestore-debug.log
+certificates
+
+# local tunnel binaries
+/cloudflared*.exe

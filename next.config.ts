@@ -1,10 +1,8 @@
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
-  /* config options here */
-  typescript: {
-    ignoreBuildErrors: true,
-  },
+  reactStrictMode: false,
+  allowedDevOrigins: ['192.168.0.103', '*.trycloudflare.com'],
   eslint: {
     ignoreDuringBuilds: true,
   },

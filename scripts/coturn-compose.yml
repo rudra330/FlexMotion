@@ -1,0 +1,21 @@
+services:
+  turn-tcp:
+    image: coturn/coturn:4.15.0-alpine
+    container_name: motionmirror-turn-tcp
+    restart: unless-stopped
+    ports:
+      - "${MOTIONMIRROR_LAN_ADDRESS}:443:3478/tcp"
+      - "${MOTIONMIRROR_LAN_ADDRESS}:49210-49250:49210-49250/udp"
+    command:
+      - -n
+      - --log-file=stdout
+      - --lt-cred-mech
+      - --realm=motionmirror.local
+      - --user=motionmirror-dev:mm-local-turn-8f3ce74a
+      - --listening-port=3478
+      - --min-port=49210
+      - --max-port=49250
+      - --external-ip=${MOTIONMIRROR_LAN_ADDRESS}
+      - --no-cli
+      - --no-tls
+      - --no-dtls
