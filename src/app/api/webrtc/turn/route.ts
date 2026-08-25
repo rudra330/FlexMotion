@@ -46,16 +46,23 @@ function getPublicFallbackServer(): RTCIceServer {
 }
 
 async function fetchMeteredTurnServers(): Promise<RTCIceServer[] | null> {
-  const domain = process.env.METERED_DOMAIN || process.env.NEXT_PUBLIC_METERED_DOMAIN;
-  const apiKey = process.env.METERED_API_KEY || process.env.NEXT_PUBLIC_METERED_API_KEY;
-  if (!domain || !apiKey) return null;
+  const rawDomain = (process.env.METERED_DOMAIN || process.env.NEXT_PUBLIC_METERED_DOMAIN || "").trim();
+  const rawApiKey = (process.env.METERED_API_KEY || process.env.NEXT_PUBLIC_METERED_API_KEY || "").trim();
+  if (!rawDomain || !rawApiKey) return null;
+
+  let domain = rawDomain.replace(/^https?:\/\//i, "").replace(/\/+$/, "");
+  if (!domain.includes(".")) {
+    domain = `${domain}.metered.ca`;
+  }
 
   try {
-    const cleanDomain = domain.replace(/^https?:\/\//, "").replace(/\/$/, "");
-    const res = await fetch(`https://${cleanDomain}/api/v1/turn/credentials?apiKey=${apiKey}`, {
+    const res = await fetch(`https://${domain}/api/v1/turn/credentials?apiKey=${encodeURIComponent(rawApiKey)}`, {
       cache: "no-store",
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.warn(`[TURN] Metered API returned status ${res.status}`);
+      return null;
+    }
     const data = await res.json();
     if (Array.isArray(data) && data.length > 0) {
       return data as RTCIceServer[];

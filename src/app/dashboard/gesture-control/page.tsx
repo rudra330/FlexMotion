@@ -27,6 +27,7 @@ import {
   getSensorDataPath,
   setLiveTrackingStatus,
   writeLiveTrackingFrame,
+  calculateDifference,
   HandGestureData,
   AngleTelemetry,
   PatientProfile,
@@ -512,19 +513,9 @@ export default function GestureControlPage() {
     sessionStorage.removeItem("pending_call_id");
   }, [role]);
 
-  // Initialize role-owned HandLandmarker ONLY when Therapy Mode is active.
+  // Preload role-owned HandLandmarker in the background so Therapy Mode starts instantly.
   useEffect(() => {
-    if ((role !== "doctor" && role !== "patient") || !allowHandTracking) {
-      if (role === "doctor") {
-        doctorHandLandmarkerRef.current?.close();
-        doctorHandLandmarkerRef.current = null;
-      } else if (role === "patient") {
-        patientHandLandmarkerRef.current?.close();
-        patientHandLandmarkerRef.current = null;
-      }
-      setIsLandmarkerReady(false);
-      return;
-    }
+    if (role !== "doctor" && role !== "patient") return;
     let cancelled = false;
     setIsLandmarkerReady(false);
     const createHandLandmarker = async () => {
@@ -590,7 +581,7 @@ export default function GestureControlPage() {
         cancelAnimationFrame(animationFrameId.current);
       }
     };
-  }, [role, allowHandTracking, toast]);
+  }, [role, toast]);
 
   // Load patient list if user is a doctor
   useEffect(() => {
@@ -731,8 +722,8 @@ export default function GestureControlPage() {
       }
     });
     const unsubscribeDifference = onValue(differenceRef, (snapshot) => {
-      if (role !== "doctor") {
-        setDifferenceAngles(snapshot.exists() ? snapshot.val() as HandGestureData : null);
+      if (snapshot.exists()) {
+        setDifferenceAngles(snapshot.val() as HandGestureData);
       }
     });
 
@@ -742,6 +733,15 @@ export default function GestureControlPage() {
       unsubscribeDifference();
     };
   }, [database, callSession?.doctorId, callSession?.patientId]);
+
+  // Recalculate Difference Heatmap continuously at 60 FPS whenever either hand updates
+  useEffect(() => {
+    if (doctorAngles && patientAngles) {
+      setDifferenceAngles(calculateDifference(doctorAngles, patientAngles));
+    } else if (!doctorAngles && !patientAngles) {
+      setDifferenceAngles(null);
+    }
+  }, [doctorAngles, patientAngles]);
 
   // Motor/Valve Log Listener during Active Session
   useEffect(() => {
