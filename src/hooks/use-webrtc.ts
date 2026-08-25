@@ -42,8 +42,6 @@ function isIceServer(value: unknown): value is RTCIceServer {
 
 async function getIceConfiguration(): Promise<RTCConfiguration> {
   const controller = new AbortController();
-  // The first request can compile this Next.js route in development. A 2.5s
-  // timeout regularly discarded a valid TURN configuration before it arrived.
   const timeout = setTimeout(() => controller.abort(), 12000);
   try {
     const response = await fetch("/api/webrtc/turn", {
@@ -55,19 +53,19 @@ async function getIceConfiguration(): Promise<RTCConfiguration> {
     const relayServers = (data.iceServers || []).filter(isIceServer);
     if (relayServers.length) {
       return {
-        iceServers: [...STUN_SERVERS, ...relayServers],
-        iceCandidatePoolSize: 2,
+        iceServers: relayServers,
+        iceCandidatePoolSize: 4,
       };
     }
     return {
       iceServers: STUN_SERVERS,
-      iceCandidatePoolSize: 2,
+      iceCandidatePoolSize: 4,
     };
   } catch (error) {
     console.warn("[WebRTC] Using standard STUN ICE servers.", error);
     return {
       iceServers: STUN_SERVERS,
-      iceCandidatePoolSize: 2,
+      iceCandidatePoolSize: 4,
     };
   } finally {
     clearTimeout(timeout);
@@ -392,6 +390,7 @@ export function useWebRTC(
                   break;
                 }
 
+                await set(ref(database, localCandidatesPath), null);
                 activeNegotiationId = negotiationId;
                 hasRemoteDescription = false;
                 await peer.setRemoteDescription(
@@ -410,9 +409,6 @@ export function useWebRTC(
                   });
                   continue;
                 }
-
-                await set(ref(database, localCandidatesPath), null);
-                if (disposed || !peer || getPatientSignalingState() !== "have-remote-offer") continue;
 
                 const answer = await peer.createAnswer();
                 if (disposed || !peer || getPatientSignalingState() !== "have-remote-offer") continue;

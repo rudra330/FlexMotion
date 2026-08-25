@@ -46,17 +46,32 @@ function getPublicFallbackServer(): RTCIceServer {
 }
 
 async function fetchMeteredTurnServers(): Promise<RTCIceServer[] | null> {
-  const rawDomain = (process.env.METERED_DOMAIN || process.env.NEXT_PUBLIC_METERED_DOMAIN || "").trim();
-  const rawApiKey = (process.env.METERED_API_KEY || process.env.NEXT_PUBLIC_METERED_API_KEY || "").trim();
+  const rawDomain = (
+    process.env.METERED_DOMAIN ||
+    process.env.NEXT_PUBLIC_METERED_DOMAIN ||
+    process.env.METERED_APP_NAME ||
+    process.env.NEXT_PUBLIC_METERED_APP_NAME ||
+    ""
+  ).trim();
+  const rawApiKey = (
+    process.env.METERED_API_KEY ||
+    process.env.NEXT_PUBLIC_METERED_API_KEY ||
+    process.env.METERED_SECRET_KEY ||
+    process.env.NEXT_PUBLIC_METERED_SECRET_KEY ||
+    process.env.METERED_KEY ||
+    process.env.NEXT_PUBLIC_METERED_KEY ||
+    ""
+  ).trim();
   if (!rawDomain || !rawApiKey) return null;
 
-  let domain = rawDomain.replace(/^https?:\/\//i, "").replace(/\/+$/, "");
+  let domain = rawDomain.replace(/^["']|["']$/g, "").replace(/^https?:\/\//i, "").replace(/\/+$/, "");
   if (!domain.includes(".")) {
     domain = `${domain}.metered.ca`;
   }
+  const apiKey = rawApiKey.replace(/^["']|["']$/g, "");
 
   try {
-    const res = await fetch(`https://${domain}/api/v1/turn/credentials?apiKey=${encodeURIComponent(rawApiKey)}`, {
+    const res = await fetch(`https://${domain}/api/v1/turn/credentials?apiKey=${encodeURIComponent(apiKey)}`, {
       cache: "no-store",
     });
     if (!res.ok) {
@@ -65,7 +80,17 @@ async function fetchMeteredTurnServers(): Promise<RTCIceServer[] | null> {
     }
     const data = await res.json();
     if (Array.isArray(data) && data.length > 0) {
-      return data as RTCIceServer[];
+      // Sort port 443 / TLS TCP TURN servers first for maximum firewall penetration on campus Wi-Fi
+      const sorted = (data as RTCIceServer[]).sort((a, b) => {
+        const aUrls = Array.isArray(a.urls) ? a.urls.join(" ") : String(a.urls || "");
+        const bUrls = Array.isArray(b.urls) ? b.urls.join(" ") : String(b.urls || "");
+        const aHasTls = aUrls.includes("turns:") || (aUrls.includes("443") && aUrls.includes("tcp"));
+        const bHasTls = bUrls.includes("turns:") || (bUrls.includes("443") && bUrls.includes("tcp"));
+        if (aHasTls && !bHasTls) return -1;
+        if (!aHasTls && bHasTls) return 1;
+        return 0;
+      });
+      return sorted;
     }
   } catch (err) {
     console.warn("[TURN] Failed to fetch Metered credentials:", err);
