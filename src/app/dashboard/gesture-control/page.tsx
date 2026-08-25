@@ -512,9 +512,19 @@ export default function GestureControlPage() {
     sessionStorage.removeItem("pending_call_id");
   }, [role]);
 
-  // Initialize role-owned HandLandmarker. Doctor and patient do not share a singleton.
+  // Initialize role-owned HandLandmarker ONLY when Therapy Mode is active.
   useEffect(() => {
-    if (role !== "doctor" && role !== "patient") return;
+    if ((role !== "doctor" && role !== "patient") || !allowHandTracking) {
+      if (role === "doctor") {
+        doctorHandLandmarkerRef.current?.close();
+        doctorHandLandmarkerRef.current = null;
+      } else if (role === "patient") {
+        patientHandLandmarkerRef.current?.close();
+        patientHandLandmarkerRef.current = null;
+      }
+      setIsLandmarkerReady(false);
+      return;
+    }
     let cancelled = false;
     setIsLandmarkerReady(false);
     const createHandLandmarker = async () => {
@@ -580,7 +590,7 @@ export default function GestureControlPage() {
         cancelAnimationFrame(animationFrameId.current);
       }
     };
-  }, [role, toast]);
+  }, [role, allowHandTracking, toast]);
 
   // Load patient list if user is a doctor
   useEffect(() => {
@@ -650,8 +660,8 @@ export default function GestureControlPage() {
 
   useEffect(() => {
     if (role !== "doctor" && role !== "patient") return;
-    setAllowHandTracking(!!activeCallId && callSession?.status === "connected");
-  }, [role, activeCallId, callSession?.status]);
+    setAllowHandTracking(!!activeCallId && callSession?.status === "connected" && !!callSession?.therapyMode);
+  }, [role, activeCallId, callSession?.status, callSession?.therapyMode]);
 
   // Automatically stop camera when call disconnects or activeCallId is cleared
   useEffect(() => {

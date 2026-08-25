@@ -13,23 +13,19 @@ function csv(value: string | undefined): string[] {
   return value?.split(",").map((entry) => entry.trim()).filter(Boolean) || [];
 }
 
-function getLanAddress(): string | null {
-  const addresses = Object.values(networkInterfaces())
-    .flatMap((entries) => entries || [])
-    .filter((entry) => entry.family === "IPv4" && !entry.internal)
-    .map((entry) => entry.address);
-
-  return addresses.find((address) => address.startsWith("192.168."))
-    || addresses.find((address) => address.startsWith("10."))
-    || addresses.find((address) => /^172\.(1[6-9]|2\d|3[01])\./.test(address))
-    || addresses[0]
-    || null;
-}
+const DEFAULT_STUN_SERVERS: RTCIceServer = {
+  urls: [
+    "stun:stun.l.google.com:19302",
+    "stun:stun1.l.google.com:19302",
+    "stun:stun2.l.google.com:19302",
+    "stun:stun3.l.google.com:19302",
+    "stun:stun4.l.google.com:19302",
+    "stun:stun.cloudflare.com:3478",
+    "stun:stun.services.mozilla.com:3478",
+  ],
+};
 
 function getPublicFallbackServer(): RTCIceServer {
-  // Metered documents this shared secret for its Open Relay static-auth host.
-  // Generate an expiring TURN REST credential server-side instead of exposing
-  // the secret or using a permanent password in the browser bundle.
   const expiresAt = Math.floor(Date.now() / 1000) + 60 * 60;
   const username = `${expiresAt}:motionmirror`;
   const credential = createHmac("sha1", OPEN_RELAY_SECRET)
@@ -49,32 +45,59 @@ function getPublicFallbackServer(): RTCIceServer {
   };
 }
 
+async function fetchMeteredTurnServers(): Promise<RTCIceServer[] | null> {
+  const domain = process.env.METERED_DOMAIN || process.env.NEXT_PUBLIC_METERED_DOMAIN;
+  const apiKey = process.env.METERED_API_KEY || process.env.NEXT_PUBLIC_METERED_API_KEY;
+  if (!domain || !apiKey) return null;
+
+  try {
+    const cleanDomain = domain.replace(/^https?:\/\//, "").replace(/\/$/, "");
+    const res = await fetch(`https://${cleanDomain}/api/v1/turn/credentials?apiKey=${apiKey}`, {
+      cache: "no-store",
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (Array.isArray(data) && data.length > 0) {
+      return data as RTCIceServer[];
+    }
+  } catch (err) {
+    console.warn("[TURN] Failed to fetch Metered credentials:", err);
+  }
+  return null;
+}
+
 export async function GET() {
-  const configuredUrls = csv(process.env.WEBRTC_TURN_URLS);
-  if (configuredUrls.length) {
+  // 1. If configured with Metered API credentials
+  const meteredServers = await fetchMeteredTurnServers();
+  if (meteredServers && meteredServers.length > 0) {
     return NextResponse.json({
-      iceServers: [{
-        urls: configuredUrls,
-        username: process.env.WEBRTC_TURN_USERNAME,
-        credential: process.env.WEBRTC_TURN_CREDENTIAL,
-      }, getPublicFallbackServer()],
+      iceServers: [DEFAULT_STUN_SERVERS, ...meteredServers],
     }, {
       headers: { "Cache-Control": "no-store" },
     });
   }
 
-  const servers: RTCIceServer[] = [
-    {
-      urls: [
-        "stun:stun.l.google.com:19302",
-        "stun:stun1.l.google.com:19302",
-        "stun:stun2.l.google.com:19302",
-        "stun:stun3.l.google.com:19302",
-        "stun:stun4.l.google.com:19302",
-        "stun:stun.cloudflare.com:3478",
-        "stun:stun.services.mozilla.com:3478",
+  // 2. If configured with custom TURN env variables
+  const configuredUrls = csv(process.env.WEBRTC_TURN_URLS);
+  if (configuredUrls.length) {
+    return NextResponse.json({
+      iceServers: [
+        DEFAULT_STUN_SERVERS,
+        {
+          urls: configuredUrls,
+          username: process.env.WEBRTC_TURN_USERNAME,
+          credential: process.env.WEBRTC_TURN_CREDENTIAL,
+        },
+        getPublicFallbackServer(),
       ],
-    },
+    }, {
+      headers: { "Cache-Control": "no-store" },
+    });
+  }
+
+  // 3. Default STUN + OpenRelay fallback
+  const servers: RTCIceServer[] = [
+    DEFAULT_STUN_SERVERS,
     getPublicFallbackServer(),
   ];
 
